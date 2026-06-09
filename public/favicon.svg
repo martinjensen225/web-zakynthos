@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Zakynthos trip icon">
+  <rect width="64" height="64" rx="14" fill="#0f6f7a"/>
+  <path d="M8 42c9-6 16-6 24 0s15 6 24 0v9H8z" fill="#d7f1ee"/>
+  <path d="M13 30c8-12 20-16 38-15-9 3-14 9-17 18-7-5-13-6-21-3z" fill="#fffaf1"/>
+  <circle cx="47" cy="19" r="6" fill="#f3bd5b"/>
+</svg>
