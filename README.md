@@ -54,6 +54,123 @@ npm run build
 npx wrangler pages dev dist --d1 TRIP_DB=zakynthos-trip
 ```
 
+## Manual Cloudflare Setup
+
+This setup creates the shared production backend used by the deployed trip planner.
+
+### 1. Sign in to Cloudflare
+
+Run Wrangler from the repository root:
+
+```powershell
+npx wrangler login
+```
+
+Approve the browser login prompt for the Cloudflare account that will own the Pages project and D1 database.
+
+### 2. Create the D1 database
+
+```powershell
+npx wrangler d1 create zakynthos-trip
+```
+
+Copy the `database_id` from the command output and update `wrangler.toml`:
+
+```toml
+database_id = "the-cloudflare-d1-database-id"
+```
+
+The D1 binding name must remain `TRIP_DB`; the Pages Function code expects that exact binding.
+
+### 3. Generate editor credentials
+
+Generate one password hash per editor. Use a different salt for each editor.
+
+```powershell
+npm run hash:editor -- martin "choose-a-password" "choose-a-random-salt"
+npm run hash:editor -- girlfriend "choose-a-password" "choose-another-random-salt"
+```
+
+Combine the generated objects into one JSON array:
+
+```json
+[
+  {
+    "username": "martin",
+    "displayName": "Martin",
+    "salt": "choose-a-random-salt",
+    "passwordHash": "generated-password-hash"
+  },
+  {
+    "username": "girlfriend",
+    "displayName": "Girlfriend",
+    "salt": "choose-another-random-salt",
+    "passwordHash": "generated-password-hash"
+  }
+]
+```
+
+Store only the JSON array in Cloudflare environment variables. Do not commit real passwords, salts, or generated hashes unless the password is temporary and will be replaced.
+
+### 4. Apply the production database migration
+
+```powershell
+npx wrangler d1 migrations apply zakynthos-trip --remote
+```
+
+### 5. Seed the production database
+
+Generate seed SQL from the current `content/*.json` files and execute it against the remote D1 database:
+
+```powershell
+npm run seed:sql > seed.local.sql
+npx wrangler d1 execute zakynthos-trip --remote --file=seed.local.sql
+```
+
+`seed.local.sql` is ignored by git. Delete it after setup if it contains trip details that should not remain on disk.
+
+### 6. Create the Cloudflare Pages project
+
+In the Cloudflare dashboard:
+
+1. Open Workers & Pages.
+2. Create a Pages application.
+3. Connect the GitHub repository.
+4. Select the `web-zakynthos` repository.
+5. Set the build command to `npm run build`.
+6. Set the build output directory to `dist`.
+7. Keep the Functions directory as `functions`.
+
+### 7. Add the D1 binding
+
+In the Cloudflare Pages project settings, add a D1 database binding:
+
+- Variable name: `TRIP_DB`
+- Database: `zakynthos-trip`
+
+### 8. Add environment variables
+
+Add these variables to the Cloudflare Pages project:
+
+- `SESSION_SECRET`: long random string used to sign editor cookies.
+- `EDITOR_USERS_JSON`: combined editor JSON array from the credential generation step.
+- `PUBLIC_READ`: `false` for private read/write, or `true` for public read with protected editing.
+
+Use `PUBLIC_READ=false` when hotel details, booking references, emergency contacts, or other private trip data are stored in the app.
+
+### 9. Deploy and verify
+
+Trigger a Cloudflare Pages deployment from the dashboard or by pushing to the connected GitHub branch.
+
+After deployment:
+
+1. Open the Cloudflare Pages URL.
+2. Confirm the app asks for login when `PUBLIC_READ=false`.
+3. Confirm the app is visible and shows an Editor login button when `PUBLIC_READ=true`.
+4. Log in as each editor.
+5. Toggle a favorite, add a note, and update a checklist item.
+6. Refresh the page and open the site on another device to confirm the changes persist.
+
 ## Data Model
 
 - `trip_sections`: JSON sections for `meta`, `highlights`, `quickLinks`, `flights`, `stay`, `locations`, `itinerary`, `attractions`, `restaurants`, `planning`, and `duringTrip`.
