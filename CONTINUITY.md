@@ -3,7 +3,7 @@
 ## Snapshot (≤ 25 lines)
 - Goal: Convert the Zakynthos guide into a shared editable trip-planning web app. (2026-06-10) [USER]
 - Now: Cloudflare Pages Functions + D1 shared-persistence implementation is staged in the working tree. (2026-06-10) [CODE]
-- Next: Create Cloudflare D1 resources, configure secrets/editor users, run migrations/seed, and deploy via Cloudflare Pages. (2026-06-10) [USER]
+- Next: Follow the terminal-first Cloudflare Pages deployment guide to create or select the Pages project, configure D1/runtime values, and deploy. (2026-06-10) [USER]
 - Open Questions: Cloudflare account/project details, production D1 database id, editor users, and public-read setting are UNCONFIRMED. (2026-06-10) [USER]
 
 ## Decisions
@@ -19,8 +19,8 @@
 - 2026-06-10 [USER] Approved Phase 2 shared-persistence implementation.
 - 2026-06-10 [CODE] Added Cloudflare Pages Functions API, D1 migration, seed/password scripts, API-backed frontend editing, and Cloudflare deployment docs.
 - 2026-06-10 [CODE] Replaced GitHub Pages deployment workflow with build validation because GitHub Pages cannot run the API.
-- 2026-06-10 [TOOL] `npm install`, `npm run lint`, `npm run test`, `npm run build`, seed SQL generation, API module import, and static preview HTTP probes passed.
-- 2026-06-10 [CODE] Added and clarified step-by-step Cloudflare setup docs, including environment variables, D1 binding, deploy-command fallback, and Wrangler-compatible seed SQL generation.
+- 2026-06-10 [CODE] Added and clarified step-by-step Cloudflare setup docs, including runtime vs build variables, D1 binding, deploy-command fallback, API token permissions, troubleshooting, and Wrangler-compatible seed SQL generation.
+- 2026-06-10 [CODE] Rewrote Cloudflare deployment docs as a terminal-first Pages + Pages Functions + D1 guide with Worker-vs-Pages troubleshooting and project-name fallback guidance.
 
 ## Working set (≤ 12 paths)
 - README.md
@@ -49,3 +49,7 @@
 - 2026-06-10T12:24+02:00 [TOOL] `npm run lint` passed after README Cloudflare setup clarification.
 - 2026-06-10T12:34+02:00 [TOOL] Earlier direct seed SQL generation produced `begin transaction;` as the first line, which Wrangler D1 rejected.
 - 2026-06-10T12:38+02:00 [TOOL] `npm run lint`, `npm run test`, and `git diff --check` passed after removing seed SQL transaction statements.
+- 2026-06-10T12:54+02:00 [TOOL] `npm run lint` passed after adding Cloudflare deploy command/API token troubleshooting docs.
+- 2026-06-10T13:01+02:00 [TOOL] `npm run lint` passed after adding runtime/build variable placement guide to README.
+- 2026-06-10T13:57+02:00 [CODE] Replaced duplicate Cloudflare README setup/deployment sections with one terminal-first Pages deployment guide; no Cloudflare deploy/API write commands were run.
+- 2026-06-10T13:57+02:00 [TOOL] `npm run lint` and `git diff --check` passed after README deployment rewrite; diff check only reported CRLF normalization warnings.

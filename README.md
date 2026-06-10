@@ -55,44 +55,114 @@ npm run build
 npx wrangler pages dev dist --d1 TRIP_DB=zakynthos-trip
 ```
 
-## Manual Cloudflare Setup
+## Cloudflare Pages Deployment
 
-This setup creates the shared production backend used by the deployed trip planner.
+This application is a Cloudflare Pages project with Pages Functions and D1. Deploy it with `wrangler pages ...` commands. Do not deploy it with `wrangler deploy`, which is for Workers.
 
-### 1. Sign in to Cloudflare
+The canonical resource names are:
 
-Run Wrangler from the repository root:
+| Resource | Name |
+| --- | --- |
+| Pages project | `web-zakynthos` |
+| Fallback Pages project name | `web-zakynthos-pages` |
+| D1 database | `zakynthos-trip` |
+| D1 binding | `TRIP_DB` |
+| Build output directory | `dist` |
+| Functions directory | `functions` |
+
+Use `web-zakynthos-pages` as the Pages project name if `web-zakynthos` is already used by a Worker or another Pages project in the Cloudflare account. After choosing the project name, use that exact name in every `--project-name` command and dashboard setting.
+
+### Source documents
+
+This deployment guide follows the current Cloudflare documentation for:
+
+- [Pages Direct Upload and Wrangler deploys](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+- [Pages Functions bindings, environment variables, and secrets](https://developers.cloudflare.com/pages/functions/bindings/)
+- [D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/)
+- [Cloudflare API token permissions](https://developers.cloudflare.com/fundamentals/api/reference/permissions/)
+
+### Runtime, binding, and deploy values
+
+Cloudflare separates values used by the running Pages Function from values used by build/deploy automation.
+
+| Name | Type | Where it belongs | Notes |
+| --- | --- | --- | --- |
+| `SESSION_SECRET` | Runtime secret | Pages project > Settings > Variables and Secrets | Signs editor login cookies. |
+| `EDITOR_USERS_JSON` | Runtime secret | Pages project > Settings > Variables and Secrets | JSON array of editor users and password hashes. |
+| `PUBLIC_READ` | Runtime variable | Pages project > Settings > Variables and Secrets | Use `false` for a private trip guide. |
+| `TRIP_DB` | D1 binding | Pages project > Settings > Bindings | Must point to the `zakynthos-trip` D1 database. |
+| `CLOUDFLARE_API_TOKEN` | Deploy-only value | Local shell, CI secret, or a dashboard deploy-command setup | Only needed by automation that runs Wrangler. |
+| `CLOUDFLARE_ACCOUNT_ID` | Deploy-only value | Local shell, CI secret, or a dashboard deploy-command setup | Only set when a deploy flow asks for it. |
+
+Do not put `TRIP_DB` in the environment-variable section. It is a binding, and the API code reads it from `context.env.TRIP_DB`.
+
+### 1. Sign in and inspect existing Cloudflare resources
+
+Run these commands from the repository root:
 
 ```powershell
 npx wrangler login
+npx wrangler whoami
+npx wrangler pages project list
+npx wrangler d1 list
 ```
 
-Approve the browser login prompt for the Cloudflare account that will own the Pages project and D1 database.
+Choose the Pages project name before creating anything:
+
+- Use `web-zakynthos` when it is available for a Pages project.
+- Use `web-zakynthos-pages` when `web-zakynthos` is already a Worker or another project.
+
+Set a shell variable for the current terminal session so the rest of the commands stay consistent:
+
+```powershell
+$PagesProject = "web-zakynthos"
+```
+
+Use this instead when the Worker name is already taken:
+
+```powershell
+$PagesProject = "web-zakynthos-pages"
+```
 
 ### 2. Create the D1 database
+
+Create the remote D1 database only once:
 
 ```powershell
 npx wrangler d1 create zakynthos-trip
 ```
 
-Copy the `database_id` from the command output and update `wrangler.toml`:
+Wrangler prints a `database_id`. Copy it into `wrangler.toml`:
 
 ```toml
+[[d1_databases]]
+binding = "TRIP_DB"
+database_name = "zakynthos-trip"
 database_id = "the-cloudflare-d1-database-id"
 ```
 
-The D1 binding name must remain `TRIP_DB`; the Pages Function code expects that exact binding.
+The `binding` value must remain `TRIP_DB`; the Pages Function code requires that exact name.
 
-### 3. Generate editor credentials
+### 3. Apply D1 migrations
 
-Generate one password hash per editor. Use a different salt for each editor.
+Apply the checked-in migration files to the remote D1 database:
+
+```powershell
+npx wrangler d1 migrations apply zakynthos-trip --remote
+```
+
+This creates the shared tables used by the app: `trip_sections`, `notes`, `favorites`, and `checklist_items`.
+
+### 4. Generate editor password hashes
+
+Generate one hash per editor. Use a different random salt per editor, and do not reuse real passwords from other services.
 
 ```powershell
 npm run hash:editor -- martin "choose-a-password" "choose-a-random-salt"
 npm run hash:editor -- girlfriend "choose-a-password" "choose-another-random-salt"
 ```
 
-Combine the generated objects into one JSON array:
+Each command prints a one-user JSON array. Combine the generated objects into one array for `EDITOR_USERS_JSON`:
 
 ```json
 [
@@ -111,153 +181,259 @@ Combine the generated objects into one JSON array:
 ]
 ```
 
-Store only the JSON array in Cloudflare environment variables. Do not commit real passwords, salts, or generated hashes unless the password is temporary and will be replaced.
+Do not commit real passwords, salts, generated hashes, or production `EDITOR_USERS_JSON` values.
 
-### 4. Apply the production database migration
+### 5. Generate and apply seed SQL
 
-```powershell
-npx wrangler d1 migrations apply zakynthos-trip --remote
-```
-
-### 5. Seed the production database
-
-Generate seed SQL from the current `content/*.json` files and execute it against the remote D1 database:
+Generate seed SQL from the current `content/*.json` files:
 
 ```powershell
 node scripts/create-seed.mjs | Set-Content -Encoding utf8 .\seed.local.sql
 Get-Content .\seed.local.sql -TotalCount 1
+```
+
+The first line must start with `insert into trip_sections`. If it starts with `>` or package-manager text, regenerate it with the `node scripts/create-seed.mjs` command.
+
+Apply the seed file to the remote D1 database:
+
+```powershell
 npx wrangler d1 execute zakynthos-trip --remote --file=seed.local.sql
 ```
 
-The first line printed by `Get-Content` must start with `insert into trip_sections`. If it starts with `>` or npm package text, regenerate the file with the `node scripts/create-seed.mjs` command above. `seed.local.sql` is ignored by git. Delete it after setup if it contains trip details that should not remain on disk.
+`seed.local.sql` is ignored by git. Delete it after setup if it contains trip details that should not remain on disk.
 
-### 6. Create the Cloudflare Pages project
+### 6. Build the static assets
 
-There is no Pages project to select until this step has been completed. Create the Pages project first, then return to the project settings to add bindings and production variables.
+Build the Pages output locally:
+
+```powershell
+npm install
+npm run lint
+npm run test
+npm run build
+```
+
+The build output must be `dist`. Wrangler uploads the `dist` directory and includes Pages Functions from the repository's `functions/` directory when `wrangler pages deploy` runs from the project root.
+
+### 7. Create the Pages project from the terminal
+
+Create the Pages project with Wrangler:
+
+```powershell
+npx wrangler pages project create $PagesProject
+```
+
+When prompted:
+
+- Project name: use the value of `$PagesProject`.
+- Production branch: `main`.
+
+This creates a real Pages project served at `<project-name>.pages.dev`. It does not create a Worker service.
+
+### 8. Deploy with Wrangler Pages
+
+Deploy the built Pages assets:
+
+```powershell
+npx wrangler pages deploy dist --project-name $PagesProject
+```
+
+For a preview branch deployment, include the branch:
+
+```powershell
+npx wrangler pages deploy dist --project-name $PagesProject --branch preview
+```
+
+Use the actual Pages project name in all deploy commands. For example, if the fallback name was chosen:
+
+```powershell
+npx wrangler pages deploy dist --project-name web-zakynthos-pages
+```
+
+### 9. Add the D1 binding in the dashboard
+
+Pages Functions need the production D1 binding on the Pages project.
 
 In the Cloudflare dashboard:
 
 1. Open Workers & Pages.
-2. Create an application.
-3. Choose Pages.
-4. Choose Connect to Git.
-5. Connect the GitHub repository.
-6. Select the `web-zakynthos` repository.
-7. Configure the build:
-   - Framework preset: None
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-   - Root directory / path: leave empty unless the repository is inside a monorepo
-8. Save and deploy.
-
-Cloudflare should detect the `functions/` directory automatically for a Pages project. If the dashboard does not show a Functions directory field, continue without setting one.
-
-If the dashboard only shows fields such as Deploy command, Non-production branch deploy command, Path, API token, API token name, Variable name, and Variable value, the flow is not the classic Pages Git setup screen. Use this fallback configuration:
-
-- Deploy command: `npm install && npm run build && npx wrangler pages deploy dist --project-name web-zakynthos`
-- Non-production branch deploy command: `npm install && npm run build && npx wrangler pages deploy dist --project-name web-zakynthos --branch $CF_PAGES_BRANCH`
-- Path: `.`
-- API token name: `CLOUDFLARE_API_TOKEN`
-- API token: a Cloudflare API token that can deploy Pages projects for the account
-
-After the first deployment, open Workers & Pages and select the newly created `web-zakynthos` Pages project. Continue with the binding and environment variable steps below.
-
-The API-token flow deploys with Wrangler. It still creates a Pages project, but the dashboard may not ask for a build output directory because the deploy command decides what folder is uploaded.
-
-### 7. Add the D1 binding
-
-`TRIP_DB` is not a normal environment variable. It is a D1 binding that gives the Pages Function access to the database through `context.env.TRIP_DB`.
-
-In the Cloudflare dashboard:
-
-1. Open Workers & Pages.
-2. Select the `web-zakynthos` Pages project.
+2. Select the Pages project named `web-zakynthos` or `web-zakynthos-pages`.
 3. Open Settings.
 4. Open Bindings.
-5. Add a D1 database binding.
-6. Set Variable name to `TRIP_DB`.
-7. Select the `zakynthos-trip` database.
-8. Save the binding.
+5. Select Add binding.
+6. Choose D1 database.
+7. Set Variable name to `TRIP_DB`.
+8. Select the D1 database named `zakynthos-trip`.
+9. Save.
 
-Redeploy after adding or changing bindings.
+Redeploy after adding or changing a binding.
 
-### 8. Add environment variables
+### 10. Add runtime variables and secrets in the dashboard
 
-Environment variables are configured on the Pages project after the project exists.
+Add app runtime values to the Pages project, not to a Worker and not to `wrangler.toml`.
 
 In the Cloudflare dashboard:
 
 1. Open Workers & Pages.
-2. Select the `web-zakynthos` Pages project.
+2. Select the Pages project named `web-zakynthos` or `web-zakynthos-pages`.
 3. Open Settings.
-4. Open Environment variables.
-5. Add each variable below.
+4. Open Variables and Secrets.
+5. Select Add.
+6. Add each value below to the Production environment.
 
 Add `SESSION_SECRET`:
 
+- Type: Secret, or select Encrypt if the dashboard offers encryption as a checkbox.
 - Variable name: `SESSION_SECRET`
-- Variable value: a long random secret string from a password manager
-
-Add `PUBLIC_READ`:
-
-- Variable name: `PUBLIC_READ`
-- Variable value: `false`
-
-Use `PUBLIC_READ=false` when hotel details, booking references, emergency contacts, or other private trip data are stored in the app. Use `PUBLIC_READ=true` only when visitors may view the trip without logging in.
+- Value: a long random string from a password manager
 
 Add `EDITOR_USERS_JSON`:
 
+- Type: Secret, or select Encrypt if available.
 - Variable name: `EDITOR_USERS_JSON`
-- Variable value: the combined editor JSON array from the credential generation step
+- Value: the combined editor JSON array from the hash-generation step
 
-Example value:
+Add `PUBLIC_READ`:
 
-```json
-[
-  {
-    "username": "martin",
-    "displayName": "Martin",
-    "salt": "choose-a-random-salt",
-    "passwordHash": "generated-password-hash"
-  },
-  {
-    "username": "girlfriend",
-    "displayName": "Girlfriend",
-    "salt": "choose-another-random-salt",
-    "passwordHash": "generated-password-hash"
-  }
-]
-```
+- Type: Plaintext variable
+- Variable name: `PUBLIC_READ`
+- Value: `false`
 
-The local `.dev.vars` file uses the same names for local development. Production values belong in the Cloudflare Pages dashboard, not in GitHub and not in `wrangler.toml`.
+Use `PUBLIC_READ=false` when hotel details, booking references, emergency contacts, or other private trip data are stored in the app. Use `PUBLIC_READ=true` only when visitors may view the trip without logging in.
 
-Redeploy after adding or changing environment variables.
+Redeploy after adding or changing runtime variables or secrets.
 
-### 9. Deploy and verify
+### 11. Optional Git integration
 
-Trigger a Cloudflare Pages deployment from the dashboard or by pushing to the connected GitHub branch.
+The terminal-first flow above creates a Direct Upload Pages project. Direct Upload is the simplest way to avoid dashboard ambiguity and to ensure the `functions/` directory is uploaded by Wrangler.
 
-After deployment:
+If automatic Git deployments are required instead, create a separate Git-integrated Pages project in the dashboard:
 
-1. Open the Cloudflare Pages URL.
+1. Open Workers & Pages.
+2. Select Create application.
+3. Select Pages.
+4. Select Connect to Git.
+5. Connect the GitHub repository and choose `web-zakynthos`.
+6. Configure the build:
+   - Project name: `web-zakynthos` or `web-zakynthos-pages`
+   - Production branch: `main`
+   - Framework preset: None
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Root directory: leave empty unless this repository is inside a monorepo
+7. Save and deploy.
+
+After the first Git deployment, add the same `TRIP_DB` binding and runtime variables described above.
+
+### 12. Verify the deployed app
+
+After the binding and runtime values are set and the project has been redeployed:
+
+1. Open the Pages URL.
 2. Confirm the app asks for login when `PUBLIC_READ=false`.
 3. Confirm the app is visible and shows an Editor login button when `PUBLIC_READ=true`.
 4. Log in as each editor.
 5. Toggle a favorite, add a note, and update a checklist item.
 6. Refresh the page and open the site on another device to confirm the changes persist.
 
-## Legacy Cloudflare Setup Notes
+## Worker vs Pages Troubleshooting
 
-Older Cloudflare Pages setup screens may use slightly different labels:
+### Recognize a Worker URL
 
-- Build command: `npm run build`
-- Build output directory: `dist`
-- Functions directory: `functions`
-- D1 binding: `TRIP_DB`
+A dashboard URL like this points to a Worker service, not a Pages project:
 
-The current app only requires the `dist` build output, the `functions/` directory, the `TRIP_DB` D1 binding, and the three environment variables described above.
+```text
+https://dash.cloudflare.com/<account-id>/workers/services/view/web-zakynthos/production
+```
 
-If the dashboard asks for variable name and variable value during project creation, those are environment variables. Add `SESSION_SECRET`, `PUBLIC_READ`, and `EDITOR_USERS_JSON` there. Add `TRIP_DB` later as a D1 binding after the Pages project exists.
+The `workers/services/view/...` segment is the key signal. A Worker service named `web-zakynthos` does not provide a Pages project, Pages Functions, or Pages D1 bindings for this app.
+
+### Recognize a Pages project
+
+A Pages project appears under Workers & Pages as a Pages application and has a `*.pages.dev` deployment URL. Its settings include Pages deployment details, Pages Functions, Bindings, and Variables and Secrets.
+
+From the terminal, list Pages projects with:
+
+```powershell
+npx wrangler pages project list
+```
+
+If the intended project name is missing from this list, it is not an existing Pages project in the selected account.
+
+### Dashboard creates or opens a Worker instead of Pages
+
+Do not try to convert the Worker by adding a Worker entry point. Create a real Pages project instead:
+
+```powershell
+$PagesProject = "web-zakynthos-pages"
+npx wrangler pages project create $PagesProject
+npm run build
+npx wrangler pages deploy dist --project-name $PagesProject
+```
+
+Then add `TRIP_DB`, `SESSION_SECRET`, `EDITOR_USERS_JSON`, and `PUBLIC_READ` to that Pages project.
+
+### `Project not found ... pages/projects/web-zakynthos`
+
+This means Wrangler looked for a Pages project named `web-zakynthos` and did not find one in the current Cloudflare account. Run:
+
+```powershell
+npx wrangler whoami
+npx wrangler pages project list
+```
+
+If no Pages project exists, create one. If the real Pages project is named `web-zakynthos-pages`, deploy with:
+
+```powershell
+npx wrangler pages deploy dist --project-name web-zakynthos-pages
+```
+
+### `wrangler deploy` is wrong for this app
+
+`wrangler deploy` deploys Workers. This repo has a Pages build output (`dist`), Pages Functions (`functions/`), and a Pages D1 binding (`TRIP_DB`), so deployment must use:
+
+```powershell
+npx wrangler pages deploy dist --project-name web-zakynthos
+```
+
+If the Pages project uses the fallback name, use:
+
+```powershell
+npx wrangler pages deploy dist --project-name web-zakynthos-pages
+```
+
+Do not add `main = "src/index.ts"` or `[assets]` to `wrangler.toml` to satisfy Worker deployment errors. That would document or configure a different deployment model than this app uses.
+
+### `Missing entry-point to Worker script or to assets directory`
+
+This error usually means Wrangler is trying to deploy a Worker. Replace the deploy command with `npx wrangler pages deploy dist --project-name <pages-project-name>`.
+
+### `Authentication error [code: 10000]`
+
+Wrangler found credentials, but the token cannot perform the requested operation. Confirm the active account with `npx wrangler whoami`.
+
+For deploy automation, create a scoped API token in Cloudflare Dashboard > My Profile > API Tokens > Create Token > Custom token:
+
+1. Token name: `web-zakynthos-pages-deploy`.
+2. Permissions: `Account > Cloudflare Pages > Edit`.
+3. Account resources: select the account that owns the Pages project.
+4. Create the token and store the value as `CLOUDFLARE_API_TOKEN` in the local shell, CI secret store, or dashboard deploy-command setup.
+
+If the same automation also creates or migrates D1 databases, it needs D1 write permissions too. Keep D1 setup manual unless automation explicitly owns that responsibility.
+
+### `npx wrangler pages deploy` has no upload directory
+
+The deploy command must include the built output directory:
+
+```powershell
+npx wrangler pages deploy dist --project-name web-zakynthos
+```
+
+Do not use:
+
+```powershell
+npx wrangler pages deploy
+```
 
 ## Data Model
 
@@ -280,33 +456,6 @@ The original `content/*.json` files are seed data. Runtime edits are saved in D1
 - `POST /api/checklist-items`, `PUT /api/checklist-items/:id`, `DELETE /api/checklist-items/:id`
 
 Write operations require an editor session. By default, reads are private too. Set `PUBLIC_READ=true` only when the trip guide should be visible to visitors without login.
-
-## Deployment
-
-Use Cloudflare Pages connected to the GitHub repository.
-
-- Build command: `npm run build`
-- Build output directory: `dist`
-- Functions directory: `functions`
-- D1 binding: `TRIP_DB`
-
-Create production resources:
-
-```powershell
-npx wrangler d1 create zakynthos-trip
-npx wrangler d1 migrations apply zakynthos-trip --remote
-node scripts/create-seed.mjs | Set-Content -Encoding utf8 .\seed.local.sql
-Get-Content .\seed.local.sql -TotalCount 1
-npx wrangler d1 execute zakynthos-trip --remote --file=seed.local.sql
-```
-
-Update `wrangler.toml` with the D1 database id returned by Cloudflare.
-
-Set these Cloudflare Pages environment variables/secrets:
-
-- `SESSION_SECRET`: long random string used to sign editor cookies.
-- `EDITOR_USERS_JSON`: JSON array generated with `npm run hash:editor`.
-- `PUBLIC_READ`: `false` for private read/write or `true` for public read and protected write.
 
 ## Editor Access
 
