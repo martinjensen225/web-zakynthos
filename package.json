@@ -8,6 +8,8 @@
     "build": "node scripts/build.mjs",
     "lint": "node scripts/validate.mjs",
     "test": "node scripts/validate.mjs",
+    "seed:sql": "node scripts/create-seed.mjs",
+    "hash:editor": "node scripts/hash-editor-password.mjs",
     "preview": "node scripts/dev-server.mjs dist"
   }
 }

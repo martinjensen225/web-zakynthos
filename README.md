@@ -1,70 +1,118 @@
-# Zakynthos September Guide
+# Zakynthos Shared Trip Planner
 
-Mobile-first static trip guide for planning and using a September trip to Zakynthos, Greece. The site is designed to be useful before the trip for planning and during the trip as a quick phone guide.
+Mobile-first shared trip planner and phone guide for a September trip to Zakynthos, Greece. The app keeps the original guide-style pages while storing trip content, notes, favorites, and checklist progress in protected Cloudflare D1 storage.
 
-## Tech stack
+## Tech Stack
 
-- Dependency-free static HTML, CSS, and JavaScript
-- Editable trip content in `content/*.json`
-- Small loader glue in `data/trip.js`
-- Plain CSS in `assets/styles.css`
-- Browser-only `localStorage` for favorites, checklist state, and notes
-- Google Maps search links generated from editable location data, with no Maps API key
+- Static HTML, CSS, and browser JavaScript
+- Cloudflare Pages for hosting
+- Cloudflare Pages Functions for `/api/*`
+- Cloudflare D1 for shared persistence
+- Signed HttpOnly editor sessions
+- Google Maps search links with no Maps API key
 
-## Local development
+## Local Development
 
 ```powershell
 npm install
-npm run dev
 npm run lint
 npm run test
 npm run build
 npm run preview
 ```
 
-The production build is written to `dist/`.
+`npm run preview` serves the static build only. It does not run the API. Use Cloudflare Wrangler for full local API testing.
 
-## Editing trip content
+## Local Backend Setup
 
-Most trip content lives in the files under `content/`.
+1. Install or run Wrangler with the Cloudflare CLI tooling.
+2. Copy `.dev.vars.example` to `.dev.vars`.
+3. Generate an editor password hash:
 
-- `content/meta.json`: title, dates, destination, subtitle, and traveler label.
-- `content/flights.json`: outbound and return placeholders.
-- `content/stay.json`: hotel or apartment details.
-- `content/locations.json`: reusable map entries.
-- `content/itinerary.json`: daily itinerary blocks.
-- `content/attractions.json`: beaches, viewpoints, boat trips, villages, and rainy-day ideas.
-- `content/restaurants.json`: wishlist and booked places.
-- `content/planning.json`: checklist, packing list, budget notes, and open questions.
-- `content/during-trip.json`: emergency placeholders, transport notes, and essentials.
-- `content/highlights.json` and `content/quick-links.json`: home-page content.
+```powershell
+npm run hash:editor -- martin "replace-with-password" "replace-with-random-salt"
+```
 
-The `data/trip.js` file only loads those JSON files together for the app.
+4. Put the generated JSON into `EDITOR_USERS_JSON` in `.dev.vars`.
+5. Create and migrate a local D1 database:
 
-Booking-specific values are intentionally placeholders until real bookings are available.
+```powershell
+npx wrangler d1 migrations apply zakynthos-trip --local
+```
+
+6. Seed the database from the current `content/*.json` files:
+
+```powershell
+npm run seed:sql > seed.local.sql
+npx wrangler d1 execute zakynthos-trip --local --file=seed.local.sql
+```
+
+7. Build and run the Pages app locally:
+
+```powershell
+npm run build
+npx wrangler pages dev dist --d1 TRIP_DB=zakynthos-trip
+```
+
+## Data Model
+
+- `trip_sections`: JSON sections for `meta`, `highlights`, `quickLinks`, `flights`, `stay`, `locations`, `itinerary`, `attractions`, `restaurants`, `planning`, and `duringTrip`.
+- `notes`: shared notes attached to page/card targets.
+- `favorites`: shared saved targets used by attraction, restaurant, map, stay, itinerary, and guide pages.
+- `checklist_items`: shared planning checklist items and completion state.
+
+The original `content/*.json` files are seed data. Runtime edits are saved in D1 and are not written back to source files.
+
+## API
+
+- `GET /api/session`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/trip`
+- `PATCH /api/trip/sections/:sectionKey`
+- `POST /api/notes`, `PUT /api/notes/:id`, `DELETE /api/notes/:id`
+- `PUT /api/favorites/:targetId`, `DELETE /api/favorites/:targetId`
+- `POST /api/checklist-items`, `PUT /api/checklist-items/:id`, `DELETE /api/checklist-items/:id`
+
+Write operations require an editor session. By default, reads are private too. Set `PUBLIC_READ=true` only when the trip guide should be visible to visitors without login.
 
 ## Deployment
 
-The repository includes `.github/workflows/deploy-pages.yml` for GitHub Pages.
+Use Cloudflare Pages connected to the GitHub repository.
 
-Manual setup:
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Functions directory: `functions`
+- D1 binding: `TRIP_DB`
 
-1. Open the GitHub repository settings.
-2. Go to Pages.
-3. Set Source to GitHub Actions.
-4. Push to `main` or run the workflow manually.
+Create production resources:
 
-The site uses relative links, so it can be served from GitHub Pages, a custom domain, or a local static server without changing a base path.
+```powershell
+npx wrangler d1 create zakynthos-trip
+npx wrangler d1 migrations apply zakynthos-trip --remote
+npm run seed:sql > seed.local.sql
+npx wrangler d1 execute zakynthos-trip --remote --file=seed.local.sql
+```
 
-## Switching hosting later
+Update `wrangler.toml` with the D1 database id returned by Cloudflare.
 
-- Azure Static Web Apps: use build command `npm run build`, app location `/`, output location `dist`, and add the deployment token secret required by the Azure-generated workflow.
-- Cloudflare Pages: connect the repo in the Cloudflare dashboard, use build command `npm run build`, output directory `dist`, and Node 24.
-- Any static host: build locally or in CI and publish `dist/`.
+Set these Cloudflare Pages environment variables/secrets:
 
-## Known limitations
+- `SESSION_SECRET`: long random string used to sign editor cookies.
+- `EDITOR_USERS_JSON`: JSON array generated with `npm run hash:editor`.
+- `PUBLIC_READ`: `false` for private read/write or `true` for public read and protected write.
 
-- Favorites, checklist state, and notes are stored only in the current browser on the current device.
-- There is no backend, account system, or cross-device sync.
-- Google Maps links use normal search URLs, so exact results depend on Google Maps search behavior.
-- The trip dates, hotel, flights, bookings, emergency details, and prices must be filled in manually.
+## Editor Access
+
+Editor users are configured through `EDITOR_USERS_JSON`; no passwords are committed to source control. Add both travelers to that JSON array when both should be able to edit the trip.
+
+## Cost Notes
+
+Cloudflare Pages, Pages Functions, and D1 have free-tier quotas suitable for a small two-person trip planner. No paid third-party APIs are required.
+
+## Known Limitations
+
+- The app uses normal save/refresh behavior, not real-time collaborative editing.
+- Section editors use JSON for broad trip content changes.
+- Draft section edits are kept in browser `localStorage` until saved or reset.
+- Real booking details, private addresses, flight numbers, and emergency contacts should be entered through the protected app, not committed into seed JSON.

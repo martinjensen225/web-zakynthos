@@ -33,7 +33,8 @@ a {
 
 button,
 textarea,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -181,6 +182,24 @@ main {
   cursor: pointer;
 }
 
+.button:disabled,
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.button.compact {
+  min-height: 38px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.92rem;
+}
+
+.button.ghost {
+  background: transparent;
+  color: var(--sea-dark);
+  border-color: var(--line);
+}
+
 .primary,
 .map-link {
   background: var(--sea);
@@ -272,6 +291,12 @@ main {
 .icon-button[aria-pressed="true"] {
   background: var(--sun);
   border-color: #b77715;
+}
+
+.icon-button.small {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
 }
 
 .countdown {
@@ -379,6 +404,13 @@ main {
   font-weight: 700;
 }
 
+.note-box label,
+.auth-panel label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--sea-dark);
+}
+
 .note-box textarea {
   width: 100%;
   resize: vertical;
@@ -387,6 +419,11 @@ main {
   padding: 0.75rem;
   color: var(--ink);
   background: #fffdf8;
+}
+
+.note-box textarea:disabled {
+  color: var(--muted);
+  background: #f5f0e7;
 }
 
 .checklist {
@@ -402,6 +439,8 @@ main {
   gap: 0.75rem;
   align-items: start;
   justify-content: space-between;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .checklist label {
@@ -427,6 +466,81 @@ main {
   background: white;
   padding: 0.1rem 0.25rem;
   border-radius: 4px;
+}
+
+.editor-bar,
+.auth-panel {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.editor-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor-bar p,
+.form-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.editor-actions,
+.mini-actions,
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.auth-panel form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.auth-panel input,
+.inline-form input,
+.inline-form select,
+.editor-card textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.auth-panel input,
+.inline-form input,
+.inline-form select {
+  min-height: 42px;
+  padding: 0.55rem 0.7rem;
+}
+
+.inline-form {
+  margin-top: 1rem;
+}
+
+.inline-form input {
+  min-width: min(18rem, 100%);
+  flex: 1 1 18rem;
+}
+
+.editor-card textarea {
+  min-height: 18rem;
+  padding: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  resize: vertical;
 }
 
 @media (min-width: 760px) {
@@ -467,7 +581,9 @@ main {
   .print-hidden,
   .favorite-button,
   .note-box,
-  .map-link {
+  .map-link,
+  .editor-bar,
+  .edit-section {
     display: none !important;
   }
 

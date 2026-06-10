@@ -1,0 +1,3 @@
+SESSION_SECRET=replace-with-a-long-random-session-secret
+PUBLIC_READ=false
+EDITOR_USERS_JSON=[{"username":"martin","displayName":"Martin","salt":"replace-with-random-salt","passwordHash":"replace-with-password-hash"}]

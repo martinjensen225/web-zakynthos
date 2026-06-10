@@ -1,0 +1,8 @@
+name = "web-zakynthos"
+compatibility_date = "2026-06-10"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "TRIP_DB"
+database_name = "zakynthos-trip"
+database_id = "replace-with-cloudflare-d1-database-id"
