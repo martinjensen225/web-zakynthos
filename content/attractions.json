@@ -1,0 +1,58 @@
+[
+  {
+    "id": "att-blue-caves",
+    "name": "Blue Caves",
+    "category": "Boat trip",
+    "area": "North coast",
+    "summary": "Classic September sea-cave outing when wind and water conditions are good.",
+    "bestFor": "Clear-water photos, swimming stops, and a special half-day.",
+    "locationId": "blue-caves",
+    "mustDo": true
+  },
+  {
+    "id": "att-porto-limnionas",
+    "name": "Porto Limnionas",
+    "category": "Beach",
+    "area": "West coast",
+    "summary": "Rocky cove with deep blue water and a more dramatic coastline feel.",
+    "bestFor": "Swimming, water shoes, lunch nearby, sunset-side exploring.",
+    "locationId": "porto-limnionas",
+    "mustDo": true
+  },
+  {
+    "id": "att-gerakas",
+    "name": "Gerakas Beach",
+    "category": "Beach",
+    "area": "Vasilikos",
+    "summary": "Long sandy beach area often associated with turtle nesting protection.",
+    "bestFor": "A softer beach day and a quieter morning start.",
+    "locationId": "gerakas"
+  },
+  {
+    "id": "att-navagio-viewpoint",
+    "name": "Navagio viewpoint area",
+    "category": "Viewpoint",
+    "area": "Northwest",
+    "summary": "Cliff-view candidate for a photo stop; confirm access and safety before going.",
+    "bestFor": "Views, not swimming. Check current local access rules before relying on it.",
+    "locationId": "navagio-viewpoint"
+  },
+  {
+    "id": "att-bochali",
+    "name": "Bochali",
+    "category": "Village",
+    "area": "Above Zakynthos Town",
+    "summary": "Hillside area with views over town, useful for a relaxed evening.",
+    "bestFor": "Sunset drinks, town views, and a gentle dinner plan.",
+    "locationId": "bochali"
+  },
+  {
+    "id": "att-town",
+    "name": "Zakynthos Town",
+    "category": "Rainy day",
+    "area": "East coast",
+    "summary": "Good fallback for cafes, harbor walks, small museums, shops, and dinner.",
+    "bestFor": "Rainy weather, arrival evening, or an easier no-driving plan.",
+    "locationId": "zakynthos-town"
+  }
+]

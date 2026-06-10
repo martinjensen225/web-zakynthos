@@ -1,0 +1,8 @@
+{
+  "outbound": "Add outbound airport, date, airline, flight number, and time.",
+  "return": "Add return airport, date, airline, flight number, and time.",
+  "notes": [
+    "Add baggage allowance and check-in deadline.",
+    "Add airport transfer plan after booking."
+  ]
+}

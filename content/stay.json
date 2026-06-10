@@ -1,0 +1,13 @@
+{
+  "name": "Hotel or apartment name placeholder",
+  "checkIn": "Add check-in date and time",
+  "checkOut": "Add check-out date and time",
+  "address": "Add full address after booking",
+  "contact": "Add phone, email, and booking link",
+  "bookingReference": "Add booking reference",
+  "notes": [
+    "Add parking or transfer details.",
+    "Add breakfast, pool, beach access, and late arrival notes."
+  ],
+  "locationId": "hotel"
+}

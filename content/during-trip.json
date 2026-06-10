@@ -1,0 +1,22 @@
+{
+  "emergency": [
+    "Emergency number: add local emergency details before departure.",
+    "Hotel contact: add phone and address after booking.",
+    "Insurance contact: add policy and phone number.",
+    "Nearest pharmacy/medical option: add based on stay area."
+  ],
+  "transport": [
+    "Airport transfer: add pickup point and driver/contact.",
+    "Rental car: add provider, pickup/dropoff time, fuel policy, and parking notes.",
+    "Taxi backup: add reliable taxi number once known."
+  ],
+  "dailyEssentials": [
+    "Water, sunscreen, sunglasses, charger, cash/card, room key.",
+    "Water shoes and towel for rocky swimming spots.",
+    "Check wind/sea conditions before boat or west-coast swim days."
+  ],
+  "savedPlaces": [
+    "Use favorites on attraction, restaurant, and map cards to build the day list.",
+    "Add quick notes from the phone while traveling."
+  ]
+}
