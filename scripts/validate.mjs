@@ -132,4 +132,10 @@ const seedScript = await readFile(path.join(root, 'scripts/create-seed.mjs'), 'u
 assert(!seedScript.includes("console.log('begin transaction;')"), 'Seed SQL must not emit BEGIN TRANSACTION for Wrangler D1 execute.');
 assert(!seedScript.includes("console.log('commit;')"), 'Seed SQL must not emit COMMIT for Wrangler D1 execute.');
 
+const wranglerConfig = await readFile(path.join(root, 'wrangler.toml'), 'utf8');
+assert(wranglerConfig.includes('[vars]'), 'wrangler.toml must define non-secret runtime vars.');
+assert(/PUBLIC_READ\s*=\s*"(true|false)"/.test(wranglerConfig), 'PUBLIC_READ must be a non-secret runtime var in wrangler.toml.');
+assert(!wranglerConfig.includes('SESSION_SECRET'), 'SESSION_SECRET must be an encrypted Pages secret, not a committed Wrangler var.');
+assert(!wranglerConfig.includes('EDITOR_USERS_JSON'), 'EDITOR_USERS_JSON must be an encrypted Pages secret, not a committed Wrangler var.');
+
 console.log('Validation passed.');

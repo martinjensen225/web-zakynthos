@@ -2,6 +2,9 @@ name = "web-zakynthos"
 compatibility_date = "2026-06-10"
 pages_build_output_dir = "dist"
 
+[vars]
+PUBLIC_READ = "false"
+
 [[d1_databases]]
 binding = "TRIP_DB"
 database_name = "zakynthos-trip"

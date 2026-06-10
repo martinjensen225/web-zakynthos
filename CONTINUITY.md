@@ -3,7 +3,7 @@
 ## Snapshot (≤ 25 lines)
 - Goal: Convert the Zakynthos guide into a shared editable trip-planning web app. (2026-06-10) [USER]
 - Now: Cloudflare Pages Functions + D1 shared-persistence implementation is staged in the working tree. (2026-06-10) [CODE]
-- Next: Follow the terminal-first Cloudflare Pages deployment guide to create or select the Pages project, configure D1/runtime values, and deploy. (2026-06-10) [USER]
+- Next: Follow the fresh Cloudflare Pages deployment guide using `web-zakynthos`; keep editor credentials in encrypted Pages secrets and `PUBLIC_READ` in `wrangler.toml`. (2026-06-10) [USER]
 - Open Questions: Cloudflare account/project details, production D1 database id, editor users, and public-read setting are UNCONFIRMED. (2026-06-10) [USER]
 
 ## Decisions
@@ -19,8 +19,8 @@
 - 2026-06-10 [USER] Approved Phase 2 shared-persistence implementation.
 - 2026-06-10 [CODE] Added Cloudflare Pages Functions API, D1 migration, seed/password scripts, API-backed frontend editing, and Cloudflare deployment docs.
 - 2026-06-10 [CODE] Replaced GitHub Pages deployment workflow with build validation because GitHub Pages cannot run the API.
-- 2026-06-10 [CODE] Added and clarified step-by-step Cloudflare setup docs, including runtime vs build variables, D1 binding, deploy-command fallback, API token permissions, troubleshooting, and Wrangler-compatible seed SQL generation.
-- 2026-06-10 [CODE] Rewrote Cloudflare deployment docs as a terminal-first Pages + Pages Functions + D1 guide with Worker-vs-Pages troubleshooting and project-name fallback guidance.
+- 2026-06-10 [CODE] Added and clarified step-by-step Cloudflare setup docs, including runtime vs build variables, D1 binding, deploy command guidance, API token permissions, troubleshooting, and Wrangler-compatible seed SQL generation.
+- 2026-06-10 [CODE] Rewrote Cloudflare deployment docs as a fresh terminal-first Pages + Pages Functions + D1 guide using `web-zakynthos`, with editor credentials stored as encrypted Pages secrets and `PUBLIC_READ` stored in `wrangler.toml`.
 
 ## Working set (≤ 12 paths)
 - README.md
@@ -53,3 +53,8 @@
 - 2026-06-10T13:01+02:00 [TOOL] `npm run lint` passed after adding runtime/build variable placement guide to README.
 - 2026-06-10T13:57+02:00 [CODE] Replaced duplicate Cloudflare README setup/deployment sections with one terminal-first Pages deployment guide; no Cloudflare deploy/API write commands were run.
 - 2026-06-10T13:57+02:00 [TOOL] `npm run lint` and `git diff --check` passed after README deployment rewrite; diff check only reported CRLF normalization warnings.
+- 2026-06-10T15:01+02:00 [CODE] Corrected Pages project name back to `web-zakynthos`; added `PUBLIC_READ` to `wrangler.toml`, removed it from `.dev.vars.example`, and added lint guards against committing `SESSION_SECRET` or `EDITOR_USERS_JSON`.
+- 2026-06-10T15:01+02:00 [TOOL] `npm run lint`, `npm run test`, and `git diff --check` passed; diff check only reported CRLF normalization warnings.
+- 2026-06-10T15:07+02:00 [CODE] Removed alternate Pages project-name guidance; README now documents one Pages-only deployment path for project `web-zakynthos`.
+- 2026-06-10T15:07+02:00 [TOOL] `npm run lint`, `npm run test`, and `git diff --check` passed; diff check only reported CRLF normalization warnings.
+- 2026-06-10T15:07+02:00 [TOOL] README/continuity scan confirmed no alternate Pages project-name guidance remains.
