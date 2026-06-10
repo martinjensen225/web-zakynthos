@@ -1,0 +1,6 @@
+[
+  { "label": "Today plan", "href": "./itinerary.html" },
+  { "label": "Map links", "href": "./map.html" },
+  { "label": "Stay details", "href": "./stay.html" },
+  { "label": "During trip", "href": "./guide.html" }
+]

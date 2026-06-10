@@ -5,7 +5,8 @@ Mobile-first static trip guide for planning and using a September trip to Zakynt
 ## Tech stack
 
 - Dependency-free static HTML, CSS, and JavaScript
-- Editable trip content in `data/trip.js`
+- Editable trip content in `content/*.json`
+- Small loader glue in `data/trip.js`
 - Plain CSS in `assets/styles.css`
 - Browser-only `localStorage` for favorites, checklist state, and notes
 - Google Maps search links generated from editable location data, with no Maps API key
@@ -25,17 +26,20 @@ The production build is written to `dist/`.
 
 ## Editing trip content
 
-Most trip content lives in `data/trip.js`.
+Most trip content lives in the files under `content/`.
 
-- Dates and title: edit `trip.meta.startDate`, `trip.meta.endDate`, `trip.meta.title`, and `trip.meta.subtitle`.
-- Flights: edit `trip.flights`.
-- Hotel/stay: edit `trip.stay` and the `hotel` entry in `trip.locations`.
-- Attractions: edit `trip.attractions` and add matching `trip.locations` entries when map links are needed.
-- Restaurants: edit `trip.restaurants`.
-- Itinerary: edit `trip.itinerary`; each day has morning, afternoon, and evening sections.
-- Packing list: edit `trip.planning.packing`.
-- Budget notes: edit `trip.planning.budgetNotes`.
-- Emergency and practical info: edit `trip.duringTrip`.
+- `content/meta.json`: title, dates, destination, subtitle, and traveler label.
+- `content/flights.json`: outbound and return placeholders.
+- `content/stay.json`: hotel or apartment details.
+- `content/locations.json`: reusable map entries.
+- `content/itinerary.json`: daily itinerary blocks.
+- `content/attractions.json`: beaches, viewpoints, boat trips, villages, and rainy-day ideas.
+- `content/restaurants.json`: wishlist and booked places.
+- `content/planning.json`: checklist, packing list, budget notes, and open questions.
+- `content/during-trip.json`: emergency placeholders, transport notes, and essentials.
+- `content/highlights.json` and `content/quick-links.json`: home-page content.
+
+The `data/trip.js` file only loads those JSON files together for the app.
 
 Booking-specific values are intentionally placeholders until real bookings are available.
 

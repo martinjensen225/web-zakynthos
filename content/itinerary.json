@@ -1,0 +1,120 @@
+[
+  {
+    "id": "day-1",
+    "label": "Day 1",
+    "date": "Arrival day",
+    "focus": "Land, settle in, and keep the evening easy.",
+    "morning": {
+      "title": "Travel",
+      "plan": "Add outbound flight and airport plan.",
+      "notes": "Keep essentials in hand luggage: passports, cards, charger, swimwear."
+    },
+    "afternoon": {
+      "title": "Check in",
+      "plan": "Pick up transfer or rental car, check in, and unpack.",
+      "locationIds": ["hotel"]
+    },
+    "evening": {
+      "title": "First sunset",
+      "plan": "Choose an easy nearby dinner and a short walk.",
+      "notes": "Add restaurant once the stay area is confirmed."
+    }
+  },
+  {
+    "id": "day-2",
+    "label": "Day 2",
+    "date": "Editable date",
+    "focus": "Beach day and low-pressure exploring.",
+    "morning": {
+      "title": "Beach swim",
+      "plan": "Start with a calm beach after breakfast.",
+      "locationIds": ["gerakas"]
+    },
+    "afternoon": {
+      "title": "Coffee and shade",
+      "plan": "Slow lunch, beach time, and a rest back at the stay."
+    },
+    "evening": {
+      "title": "Town or village dinner",
+      "plan": "Dinner in Zakynthos Town or Bochali depending on energy.",
+      "locationIds": ["bochali", "zakynthos-town"]
+    }
+  },
+  {
+    "id": "day-3",
+    "label": "Day 3",
+    "date": "Editable date",
+    "focus": "Boat-day candidate.",
+    "morning": {
+      "title": "Boat trip",
+      "plan": "Use this day for Blue Caves or another sea-cave route if weather is good.",
+      "locationIds": ["blue-caves"]
+    },
+    "afternoon": {
+      "title": "Swim stops",
+      "plan": "Add operator, meeting point, and route after booking."
+    },
+    "evening": {
+      "title": "Simple dinner",
+      "plan": "Plan an easy dinner near the hotel after a long sun day."
+    }
+  },
+  {
+    "id": "day-4",
+    "label": "Day 4",
+    "date": "Editable date",
+    "focus": "West coast cliffs and sunset.",
+    "morning": {
+      "title": "Slow start",
+      "plan": "Sleep in, breakfast, and pack water shoes if needed."
+    },
+    "afternoon": {
+      "title": "Rocky cove swim",
+      "plan": "Explore Porto Limnionas or another west coast swimming spot.",
+      "locationIds": ["porto-limnionas"]
+    },
+    "evening": {
+      "title": "Sunset viewpoint",
+      "plan": "Pick a viewpoint or terrace dinner on the west side.",
+      "locationIds": ["navagio-viewpoint"]
+    }
+  },
+  {
+    "id": "day-5",
+    "label": "Day 5",
+    "date": "Editable date",
+    "focus": "Flexible favorites day.",
+    "morning": {
+      "title": "Repeat favorite",
+      "plan": "Return to the place we liked most, or keep this as a rest morning."
+    },
+    "afternoon": {
+      "title": "Village drive",
+      "plan": "Add villages, shops, or olive-oil stops after research.",
+      "locationIds": ["anafonitria"]
+    },
+    "evening": {
+      "title": "Booked dinner",
+      "plan": "Use this slot for a reservation once chosen."
+    }
+  },
+  {
+    "id": "day-6",
+    "label": "Day 6",
+    "date": "Departure day",
+    "focus": "Pack calmly and travel home.",
+    "morning": {
+      "title": "Pack and check out",
+      "plan": "Pack, settle hotel bill, and leave time for airport transfer.",
+      "locationIds": ["hotel"]
+    },
+    "afternoon": {
+      "title": "Airport",
+      "plan": "Add airport timing and return flight details."
+    },
+    "evening": {
+      "title": "Home",
+      "plan": "Add arrival notes and transport home."
+    }
+  }
+]

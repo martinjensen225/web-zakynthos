@@ -1,4 +1,4 @@
-import { trip } from '../data/trip.js';
+import { loadTrip } from '../data/trip.js';
 
 const page = document.body.dataset.page;
 const main = document.querySelector('#content');
@@ -322,4 +322,5 @@ function renderPage() {
   setupCountdown();
 }
 
+const trip = await loadTrip();
 renderPage();

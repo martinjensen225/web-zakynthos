@@ -1,0 +1,59 @@
+[
+  {
+    "id": "hotel",
+    "name": "Hotel placeholder",
+    "area": "Add area",
+    "category": "Stay",
+    "mapQuery": "Zakynthos Greece hotel",
+    "notes": "Replace with the exact hotel name or address after booking."
+  },
+  {
+    "id": "navagio-viewpoint",
+    "name": "Navagio viewpoint area",
+    "area": "Northwest Zakynthos",
+    "category": "Viewpoint",
+    "mapQuery": "Navagio Viewpoint Zakynthos Greece"
+  },
+  {
+    "id": "blue-caves",
+    "name": "Blue Caves",
+    "area": "North Zakynthos",
+    "category": "Boat trip",
+    "mapQuery": "Blue Caves Zakynthos Greece"
+  },
+  {
+    "id": "porto-limnionas",
+    "name": "Porto Limnionas",
+    "area": "West coast",
+    "category": "Beach",
+    "mapQuery": "Porto Limnionas Zakynthos Greece"
+  },
+  {
+    "id": "gerakas",
+    "name": "Gerakas Beach",
+    "area": "Vasilikos",
+    "category": "Beach",
+    "mapQuery": "Gerakas Beach Zakynthos Greece"
+  },
+  {
+    "id": "bochali",
+    "name": "Bochali",
+    "area": "Above Zakynthos Town",
+    "category": "Village",
+    "mapQuery": "Bochali Zakynthos Greece"
+  },
+  {
+    "id": "zakynthos-town",
+    "name": "Zakynthos Town",
+    "area": "East coast",
+    "category": "Town",
+    "mapQuery": "Zakynthos Town Greece"
+  },
+  {
+    "id": "anafonitria",
+    "name": "Anafonitria",
+    "area": "Northwest inland",
+    "category": "Village",
+    "mapQuery": "Anafonitria Zakynthos Greece"
+  }
+]

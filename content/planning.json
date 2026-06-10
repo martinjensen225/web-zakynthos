@@ -1,0 +1,34 @@
+{
+  "checklist": [
+    { "id": "book-flights", "text": "Book flights and add numbers/times", "status": "placeholder" },
+    { "id": "book-stay", "text": "Book hotel or apartment and add check-in details", "status": "placeholder" },
+    { "id": "transport", "text": "Decide rental car, taxi, or transfer plan", "status": "planned" },
+    { "id": "boat-trip", "text": "Choose boat-trip day after checking weather window", "status": "wishlist" },
+    { "id": "restaurants", "text": "Pick one romantic dinner reservation", "status": "wishlist" },
+    { "id": "insurance", "text": "Add travel insurance and emergency contacts", "status": "placeholder" }
+  ],
+  "packing": [
+    "Passports and travel documents",
+    "European health card / insurance info",
+    "Swimwear and beach towel",
+    "Water shoes for rocky coves",
+    "Light evening clothes",
+    "Sun protection and sunglasses",
+    "Chargers and power bank",
+    "Small day bag",
+    "Medication and basic first aid"
+  ],
+  "budgetNotes": [
+    "Add flight total after booking.",
+    "Add stay total after booking.",
+    "Add daily food estimate.",
+    "Add boat trip and transport estimates.",
+    "Keep cash/card notes here."
+  ],
+  "openQuestions": [
+    "Which area should we stay in?",
+    "Do we want a rental car for all days or only selected days?",
+    "Which day should be the boat trip weather window?",
+    "Which dinner should be booked in advance?"
+  ]
+}
