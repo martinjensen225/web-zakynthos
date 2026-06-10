@@ -234,6 +234,31 @@ For a preview branch deployment, include the branch:
 npx wrangler pages deploy dist --project-name web-zakynthos --branch preview
 ```
 
+### Automatic deployment from GitHub
+
+The repository deploys the existing Direct Upload Pages project from GitHub Actions. The workflow validates the app with `npm run lint`, `npm run test`, and `npm run build`, then production deploys only when changes are pushed to `main`.
+
+The deploy job runs:
+
+```bash
+npx wrangler pages deploy dist --project-name web-zakynthos --branch main
+```
+
+This keeps the deployment target as Cloudflare Pages. It does not create or update a Worker, and it avoids recreating the Pages project just to get native Pages Git integration.
+
+Create these GitHub secrets before relying on push-based deployment:
+
+| GitHub secret | Purpose |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Scoped Cloudflare token used by Wrangler to deploy Pages. |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account that owns the `web-zakynthos` Pages project. |
+
+The minimum Cloudflare API token permission for deployment is `Account > Cloudflare Pages > Edit` on the account that owns the Pages project. Do not add D1 write permissions unless a separate workflow is created to run database migrations or seed data.
+
+Trigger a production deployment by pushing to `main` or running the GitHub Actions workflow manually from the `main` branch. Pull requests run validation only.
+
+Verify the deployment in Cloudflare by opening Workers & Pages, selecting the Pages project named `web-zakynthos`, and checking that the latest deployment is on branch `main` with the expected commit. The deployed URL should be a Pages URL such as `web-zakynthos.pages.dev`; a dashboard path containing `workers/services/view/...` is a Worker, not the target resource for this app.
+
 ### 9. Add the D1 binding in the dashboard
 
 Pages Functions need the production D1 binding on the Pages project.
