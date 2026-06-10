@@ -20,7 +20,7 @@
 - 2026-06-10 [CODE] Added Cloudflare Pages Functions API, D1 migration, seed/password scripts, API-backed frontend editing, and Cloudflare deployment docs.
 - 2026-06-10 [CODE] Replaced GitHub Pages deployment workflow with build validation because GitHub Pages cannot run the API.
 - 2026-06-10 [TOOL] `npm install`, `npm run lint`, `npm run test`, `npm run build`, seed SQL generation, API module import, and static preview HTTP probes passed.
-- 2026-06-10 [CODE] Added step-by-step manual Cloudflare setup guide to README.
+- 2026-06-10 [CODE] Added and clarified step-by-step Cloudflare setup docs, including environment variables, D1 binding, deploy-command fallback, and Wrangler-compatible seed SQL generation.
 
 ## Working set (≤ 12 paths)
 - README.md
@@ -46,3 +46,6 @@
 - 2026-06-10T09:42+02:00 [TOOL] Node imported `functions/api/[[path]].js` successfully.
 - 2026-06-10T09:42+02:00 [TOOL] Static preview returned HTTP 200 for `/`, `/itinerary.html`, `/assets/app.js`, `/data/trip.js`, and `/public/images/zakynthos-hero.png`.
 - 2026-06-10T10:55+02:00 [TOOL] `npm run lint` passed after README manual setup guide update.
+- 2026-06-10T12:24+02:00 [TOOL] `npm run lint` passed after README Cloudflare setup clarification.
+- 2026-06-10T12:34+02:00 [TOOL] Earlier direct seed SQL generation produced `begin transaction;` as the first line, which Wrangler D1 rejected.
+- 2026-06-10T12:38+02:00 [TOOL] `npm run lint`, `npm run test`, and `git diff --check` passed after removing seed SQL transaction statements.

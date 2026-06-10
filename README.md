@@ -43,7 +43,8 @@ npx wrangler d1 migrations apply zakynthos-trip --local
 6. Seed the database from the current `content/*.json` files:
 
 ```powershell
-npm run seed:sql > seed.local.sql
+node scripts/create-seed.mjs | Set-Content -Encoding utf8 .\seed.local.sql
+Get-Content .\seed.local.sql -TotalCount 1
 npx wrangler d1 execute zakynthos-trip --local --file=seed.local.sql
 ```
 
@@ -123,40 +124,114 @@ npx wrangler d1 migrations apply zakynthos-trip --remote
 Generate seed SQL from the current `content/*.json` files and execute it against the remote D1 database:
 
 ```powershell
-npm run seed:sql > seed.local.sql
+node scripts/create-seed.mjs | Set-Content -Encoding utf8 .\seed.local.sql
+Get-Content .\seed.local.sql -TotalCount 1
 npx wrangler d1 execute zakynthos-trip --remote --file=seed.local.sql
 ```
 
-`seed.local.sql` is ignored by git. Delete it after setup if it contains trip details that should not remain on disk.
+The first line printed by `Get-Content` must start with `insert into trip_sections`. If it starts with `>` or npm package text, regenerate the file with the `node scripts/create-seed.mjs` command above. `seed.local.sql` is ignored by git. Delete it after setup if it contains trip details that should not remain on disk.
 
 ### 6. Create the Cloudflare Pages project
+
+There is no Pages project to select until this step has been completed. Create the Pages project first, then return to the project settings to add bindings and production variables.
 
 In the Cloudflare dashboard:
 
 1. Open Workers & Pages.
-2. Create a Pages application.
-3. Connect the GitHub repository.
-4. Select the `web-zakynthos` repository.
-5. Set the build command to `npm run build`.
-6. Set the build output directory to `dist`.
-7. Keep the Functions directory as `functions`.
+2. Create an application.
+3. Choose Pages.
+4. Choose Connect to Git.
+5. Connect the GitHub repository.
+6. Select the `web-zakynthos` repository.
+7. Configure the build:
+   - Framework preset: None
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Root directory / path: leave empty unless the repository is inside a monorepo
+8. Save and deploy.
+
+Cloudflare should detect the `functions/` directory automatically for a Pages project. If the dashboard does not show a Functions directory field, continue without setting one.
+
+If the dashboard only shows fields such as Deploy command, Non-production branch deploy command, Path, API token, API token name, Variable name, and Variable value, the flow is not the classic Pages Git setup screen. Use this fallback configuration:
+
+- Deploy command: `npm install && npm run build && npx wrangler pages deploy dist --project-name web-zakynthos`
+- Non-production branch deploy command: `npm install && npm run build && npx wrangler pages deploy dist --project-name web-zakynthos --branch $CF_PAGES_BRANCH`
+- Path: `.`
+- API token name: `CLOUDFLARE_API_TOKEN`
+- API token: a Cloudflare API token that can deploy Pages projects for the account
+
+After the first deployment, open Workers & Pages and select the newly created `web-zakynthos` Pages project. Continue with the binding and environment variable steps below.
+
+The API-token flow deploys with Wrangler. It still creates a Pages project, but the dashboard may not ask for a build output directory because the deploy command decides what folder is uploaded.
 
 ### 7. Add the D1 binding
 
-In the Cloudflare Pages project settings, add a D1 database binding:
+`TRIP_DB` is not a normal environment variable. It is a D1 binding that gives the Pages Function access to the database through `context.env.TRIP_DB`.
 
-- Variable name: `TRIP_DB`
-- Database: `zakynthos-trip`
+In the Cloudflare dashboard:
+
+1. Open Workers & Pages.
+2. Select the `web-zakynthos` Pages project.
+3. Open Settings.
+4. Open Bindings.
+5. Add a D1 database binding.
+6. Set Variable name to `TRIP_DB`.
+7. Select the `zakynthos-trip` database.
+8. Save the binding.
+
+Redeploy after adding or changing bindings.
 
 ### 8. Add environment variables
 
-Add these variables to the Cloudflare Pages project:
+Environment variables are configured on the Pages project after the project exists.
 
-- `SESSION_SECRET`: long random string used to sign editor cookies.
-- `EDITOR_USERS_JSON`: combined editor JSON array from the credential generation step.
-- `PUBLIC_READ`: `false` for private read/write, or `true` for public read with protected editing.
+In the Cloudflare dashboard:
 
-Use `PUBLIC_READ=false` when hotel details, booking references, emergency contacts, or other private trip data are stored in the app.
+1. Open Workers & Pages.
+2. Select the `web-zakynthos` Pages project.
+3. Open Settings.
+4. Open Environment variables.
+5. Add each variable below.
+
+Add `SESSION_SECRET`:
+
+- Variable name: `SESSION_SECRET`
+- Variable value: a long random secret string from a password manager
+
+Add `PUBLIC_READ`:
+
+- Variable name: `PUBLIC_READ`
+- Variable value: `false`
+
+Use `PUBLIC_READ=false` when hotel details, booking references, emergency contacts, or other private trip data are stored in the app. Use `PUBLIC_READ=true` only when visitors may view the trip without logging in.
+
+Add `EDITOR_USERS_JSON`:
+
+- Variable name: `EDITOR_USERS_JSON`
+- Variable value: the combined editor JSON array from the credential generation step
+
+Example value:
+
+```json
+[
+  {
+    "username": "martin",
+    "displayName": "Martin",
+    "salt": "choose-a-random-salt",
+    "passwordHash": "generated-password-hash"
+  },
+  {
+    "username": "girlfriend",
+    "displayName": "Girlfriend",
+    "salt": "choose-another-random-salt",
+    "passwordHash": "generated-password-hash"
+  }
+]
+```
+
+The local `.dev.vars` file uses the same names for local development. Production values belong in the Cloudflare Pages dashboard, not in GitHub and not in `wrangler.toml`.
+
+Redeploy after adding or changing environment variables.
 
 ### 9. Deploy and verify
 
@@ -170,6 +245,19 @@ After deployment:
 4. Log in as each editor.
 5. Toggle a favorite, add a note, and update a checklist item.
 6. Refresh the page and open the site on another device to confirm the changes persist.
+
+## Legacy Cloudflare Setup Notes
+
+Older Cloudflare Pages setup screens may use slightly different labels:
+
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Functions directory: `functions`
+- D1 binding: `TRIP_DB`
+
+The current app only requires the `dist` build output, the `functions/` directory, the `TRIP_DB` D1 binding, and the three environment variables described above.
+
+If the dashboard asks for variable name and variable value during project creation, those are environment variables. Add `SESSION_SECRET`, `PUBLIC_READ`, and `EDITOR_USERS_JSON` there. Add `TRIP_DB` later as a D1 binding after the Pages project exists.
 
 ## Data Model
 
@@ -207,7 +295,8 @@ Create production resources:
 ```powershell
 npx wrangler d1 create zakynthos-trip
 npx wrangler d1 migrations apply zakynthos-trip --remote
-npm run seed:sql > seed.local.sql
+node scripts/create-seed.mjs | Set-Content -Encoding utf8 .\seed.local.sql
+Get-Content .\seed.local.sql -TotalCount 1
 npx wrangler d1 execute zakynthos-trip --remote --file=seed.local.sql
 ```
 

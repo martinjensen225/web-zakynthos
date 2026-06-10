@@ -5,4 +5,4 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "TRIP_DB"
 database_name = "zakynthos-trip"
-database_id = "replace-with-cloudflare-d1-database-id"
+database_id = "01f8346d-2fe1-4f65-bfc4-b0af7a12a440"

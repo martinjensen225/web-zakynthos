@@ -28,8 +28,6 @@ async function readJson(fileName) {
   return JSON.parse(await readFile(path.join(root, 'content', fileName), 'utf8'));
 }
 
-console.log('begin transaction;');
-
 for (const [sectionKey, fileName] of Object.entries(sectionFiles)) {
   const json = JSON.stringify(await readJson(fileName));
   console.log(
@@ -43,5 +41,3 @@ for (const [index, item] of planning.checklist.entries()) {
     `insert into checklist_items (id, trip_id, text, status, done, sort_order, created_at, updated_at, updated_by) values (${sqlString(item.id)}, ${sqlString(tripId)}, ${sqlString(item.text)}, ${sqlString(item.status)}, 0, ${index + 1}, ${sqlString(updatedAt)}, ${sqlString(updatedAt)}, ${sqlString(updatedBy)}) on conflict(id) do update set text = excluded.text, status = excluded.status, sort_order = excluded.sort_order, updated_at = excluded.updated_at, updated_by = excluded.updated_by;`
   );
 }
-
-console.log('commit;');

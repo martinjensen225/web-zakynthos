@@ -128,4 +128,8 @@ assert(!app.includes('zakynthos:checks'), 'Checklist state must not use local-on
 const dataClient = await readFile(path.join(root, 'data/trip.js'), 'utf8');
 assert(dataClient.includes('/api/trip'), 'The app must load shared trip data from the API.');
 
+const seedScript = await readFile(path.join(root, 'scripts/create-seed.mjs'), 'utf8');
+assert(!seedScript.includes("console.log('begin transaction;')"), 'Seed SQL must not emit BEGIN TRANSACTION for Wrangler D1 execute.');
+assert(!seedScript.includes("console.log('commit;')"), 'Seed SQL must not emit COMMIT for Wrangler D1 execute.');
+
 console.log('Validation passed.');
