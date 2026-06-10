@@ -6,7 +6,7 @@ Maintain one repo-scoped ledger at `<REPO_ROOT>/CONTINUITY.md` for durable curre
 
 - Resolve the active repo root; confirm with `git rev-parse --show-toplevel` when available.
 - Read the ledger before edits, after compaction, and when switching repos.
-- If durable state is needed and the ledger is missing, create it from `.agents/templates/CONTINUITY.TEMPLATE.md`.
+- If durable state is needed and the ledger is missing, create it from `.github/instructions/templates/CONTINUITY.TEMPLATE.md`.
 
 ## Multi-repo work
 

@@ -1,22 +1,11 @@
-# Special Files
+# Special files
 
-The following conventions are adopted for files that exist exclusively for AI agents.
+AI-assisted repo conventions.
 
-## `AGENTS.md`
-
-Files by this name contain agent instructions
-
-## `.INDEX.md`
-
-Files by this name contain an index of linked files for fast discovery
-
-## `.SUMMARY.md`
-
-Files by this name contain a summary of the information in the directory.
-
-## `.TEMPLATE.md`
-
-Markdown template for files created in the parent directory.
-
-## `CONTINUITY.md`
-Repo-scoped continuity ledger (canonical current state for ongoing work).
+| File | Purpose |
+| --- | --- |
+| `AGENTS.md` | Instructions for the current tree. |
+| `.INDEX.md` | Short index for important child docs. |
+| `.SUMMARY.md` | Brief directory or doc-area summary. |
+| `.TEMPLATE.md` | Template for files in the parent directory. |
+| `CONTINUITY.md` | Repo-scoped current-state ledger. |
