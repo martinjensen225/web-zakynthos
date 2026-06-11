@@ -89,6 +89,8 @@ async function handleSection(request, env, sectionKey) {
   try {
     validateSectionKey(sectionKey);
     validateSection(sectionKey, body.value);
+    const currentTrip = await readTrip(env);
+    validateFullTrip({ ...currentTrip, [sectionKey]: body.value });
   } catch (validationError) {
     return errorResponse(400, validationError.message);
   }

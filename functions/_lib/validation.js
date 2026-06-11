@@ -26,16 +26,36 @@ function assertText(value, path) {
   assert(typeof value === 'string' && value.trim().length > 0, `${path} is required.`);
 }
 
+function assertOptionalText(value, path) {
+  if (value !== undefined) {
+    assert(typeof value === 'string', `${path} must be text.`);
+  }
+}
+
 function assertArray(value, path) {
   assert(Array.isArray(value), `${path} must be an array.`);
+}
+
+function assertBoolean(value, path) {
+  if (value !== undefined) {
+    assert(typeof value === 'boolean', `${path} must be true or false.`);
+  }
+}
+
+function assertStringArray(value, path) {
+  assertArray(value, path);
+  for (const item of value) {
+    assert(typeof item === 'string', `${path} items must be text.`);
+  }
 }
 
 function validatePeriod(value, path) {
   assert(isObject(value), `${path} must be an object.`);
   assertText(value.title, `${path}.title`);
   assertText(value.plan, `${path}.plan`);
+  assertOptionalText(value.notes, `${path}.notes`);
   if (value.locationIds !== undefined) {
-    assertArray(value.locationIds, `${path}.locationIds`);
+    assertStringArray(value.locationIds, `${path}.locationIds`);
   }
 }
 
@@ -51,15 +71,30 @@ export function validateSection(sectionKey, value) {
     assertText(value.title, 'meta.title');
     assertText(value.destination, 'meta.destination');
     assertText(value.startDate, 'meta.startDate');
+    assertText(value.endDate, 'meta.endDate');
+    assertText(value.travelers, 'meta.travelers');
+    assertText(value.subtitle, 'meta.subtitle');
     return;
   }
 
   if (['highlights', 'quickLinks', 'locations', 'itinerary', 'attractions', 'restaurants'].includes(sectionKey)) {
     assertArray(value, sectionKey);
-    if (sectionKey !== 'highlights') {
+    if (sectionKey === 'highlights') {
       for (const item of value) {
-        assertText(item.id ?? item.label, `${sectionKey} item id or label`);
+        assertText(item, `${sectionKey} item`);
       }
+    } else {
+      for (const [index, item] of value.entries()) {
+        assert(isObject(item), `${sectionKey}[${index}] must be an object.`);
+        assertText(item.id ?? item.label, `${sectionKey}[${index}] id or label`);
+      }
+    }
+  }
+
+  if (sectionKey === 'quickLinks') {
+    for (const item of value) {
+      assertText(item.label, 'quickLinks.label');
+      assertText(item.href, 'quickLinks.href');
     }
   }
 
@@ -67,28 +102,76 @@ export function validateSection(sectionKey, value) {
     assert(isObject(value), 'flights must be an object.');
     assertText(value.outbound, 'flights.outbound');
     assertText(value.return, 'flights.return');
-    assertArray(value.notes, 'flights.notes');
+    assertStringArray(value.notes, 'flights.notes');
   }
 
   if (sectionKey === 'stay') {
     assert(isObject(value), 'stay must be an object.');
     assertText(value.name, 'stay.name');
-    assertArray(value.notes, 'stay.notes');
+    assertText(value.checkIn, 'stay.checkIn');
+    assertText(value.checkOut, 'stay.checkOut');
+    assertText(value.address, 'stay.address');
+    assertText(value.contact, 'stay.contact');
+    assertText(value.bookingReference, 'stay.bookingReference');
+    assertText(value.locationId, 'stay.locationId');
+    assertStringArray(value.notes, 'stay.notes');
+  }
+
+  if (sectionKey === 'locations') {
+    for (const location of value) {
+      assertText(location.name, 'locations.name');
+      assertText(location.area, 'locations.area');
+      assertText(location.category, 'locations.category');
+      assertText(location.mapQuery, 'locations.mapQuery');
+      assertOptionalText(location.notes, 'locations.notes');
+    }
+  }
+
+  if (sectionKey === 'attractions') {
+    for (const attraction of value) {
+      assertText(attraction.name, 'attractions.name');
+      assertText(attraction.category, 'attractions.category');
+      assertText(attraction.area, 'attractions.area');
+      assertText(attraction.summary, 'attractions.summary');
+      assertText(attraction.bestFor, 'attractions.bestFor');
+      assertOptionalText(attraction.locationId, 'attractions.locationId');
+      assertBoolean(attraction.mustDo, 'attractions.mustDo');
+    }
+  }
+
+  if (sectionKey === 'restaurants') {
+    const statuses = new Set(['placeholder', 'wishlist', 'planned', 'booked', 'confirmed']);
+    for (const restaurant of value) {
+      assertText(restaurant.name, 'restaurants.name');
+      assertText(restaurant.area, 'restaurants.area');
+      assertText(restaurant.status, 'restaurants.status');
+      assert(statuses.has(restaurant.status), `Unknown restaurant status "${restaurant.status}".`);
+      assertText(restaurant.cuisine, 'restaurants.cuisine');
+      assertText(restaurant.notes, 'restaurants.notes');
+      assertOptionalText(restaurant.locationId, 'restaurants.locationId');
+    }
   }
 
   if (sectionKey === 'planning') {
     assert(isObject(value), 'planning must be an object.');
     assertArray(value.checklist, 'planning.checklist');
-    assertArray(value.packing, 'planning.packing');
-    assertArray(value.budgetNotes, 'planning.budgetNotes');
-    assertArray(value.openQuestions, 'planning.openQuestions');
+    for (const item of value.checklist) {
+      assert(isObject(item), 'planning.checklist items must be objects.');
+      assertText(item.id, 'planning.checklist.id');
+      assertText(item.text, 'planning.checklist.text');
+      assertText(item.status, 'planning.checklist.status');
+    }
+    assertStringArray(value.packing, 'planning.packing');
+    assertStringArray(value.budgetNotes, 'planning.budgetNotes');
+    assertStringArray(value.openQuestions, 'planning.openQuestions');
   }
 
   if (sectionKey === 'duringTrip') {
     assert(isObject(value), 'duringTrip must be an object.');
-    assertArray(value.emergency, 'duringTrip.emergency');
-    assertArray(value.transport, 'duringTrip.transport');
-    assertArray(value.dailyEssentials, 'duringTrip.dailyEssentials');
+    assertStringArray(value.emergency, 'duringTrip.emergency');
+    assertStringArray(value.transport, 'duringTrip.transport');
+    assertStringArray(value.dailyEssentials, 'duringTrip.dailyEssentials');
+    assertStringArray(value.savedPlaces, 'duringTrip.savedPlaces');
   }
 
   if (sectionKey === 'itinerary') {
@@ -109,6 +192,8 @@ export function validateFullTrip(trip) {
   }
 
   const locationIds = new Set(trip.locations.map((location) => location.id));
+  assert(locationIds.has(trip.stay.locationId), `Unknown stay location "${trip.stay.locationId}".`);
+
   for (const day of trip.itinerary) {
     for (const period of ['morning', 'afternoon', 'evening']) {
       for (const locationId of day[period].locationIds ?? []) {

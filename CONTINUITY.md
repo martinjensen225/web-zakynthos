@@ -2,9 +2,9 @@
 
 ## Snapshot (≤ 25 lines)
 - Goal: Convert the Zakynthos guide into a shared editable trip-planning web app. (2026-06-10) [USER]
-- Now: GitHub Actions deployment to the existing Cloudflare Pages Direct Upload project is staged in the working tree. (2026-06-10) [CODE]
-- Next: Create GitHub `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, then push `main` to deploy Pages automatically. (2026-06-10) [CODE]
-- Open Questions: Cloudflare account/project secret values, editor users, and public-read setting are UNCONFIRMED. (2026-06-10) [USER]
+- Now: Structured website editing and refreshed trip dashboard UI are staged in the working tree. (2026-06-11) [CODE]
+- Next: Configure Cloudflare runtime secrets/bindings if not already done, then push `main` to deploy Pages automatically. (2026-06-11) [CODE]
+- Open Questions: Cloudflare account/project secret values, editor users, and public-read setting are UNCONFIRMED. (2026-06-11) [USER]
 
 ## Decisions
 - D001 SUPERSEDED by D003: Use Astro with TypeScript data and static output for a backend-free mobile trip guide. (2026-06-09) [CODE] Superseded because npm registry access was unavailable in the sandbox.
@@ -15,12 +15,12 @@
 - D006 ACTIVE: Deploy the existing Cloudflare Pages Direct Upload project from GitHub Actions with `wrangler pages deploy`. (2026-06-10) [CODE] Avoids creating a Worker or recreating the Pages project while still deploying automatically from `main`.
 
 ## Done (recent) (≤ 7)
-- 2026-06-10 [CODE] Added Cloudflare Pages Functions API, D1 migration, seed/password scripts, API-backed frontend editing, and Cloudflare deployment docs.
 - 2026-06-10 [CODE] Replaced GitHub Pages deployment workflow with build validation because GitHub Pages cannot run the API.
 - 2026-06-10 [CODE] Added and clarified step-by-step Cloudflare setup docs, including runtime vs build variables, D1 binding, deploy command guidance, API token permissions, troubleshooting, and Wrangler-compatible seed SQL generation.
 - 2026-06-10 [CODE] Rewrote Cloudflare deployment docs as a fresh terminal-first Pages + Pages Functions + D1 guide using `web-zakynthos`, with editor credentials stored as encrypted Pages secrets and `PUBLIC_READ` stored in `wrangler.toml`.
 - 2026-06-10 [CODE] Added a GitHub Actions deploy job that builds `dist/` and deploys the existing Pages project with `cloudflare/wrangler-action@v3`.
 - 2026-06-10 [CODE] Documented push-based Pages deployment, required GitHub secrets, Pages-only verification, and why the workflow does not create a Worker.
+- 2026-06-11 [CODE] Replaced raw JSON-first editing with structured add/update/remove controls, refreshed dashboard styling, tightened section/full-trip validation, and documented website editing.
 
 ## Working set (≤ 12 paths)
 - README.md
@@ -53,3 +53,4 @@
 - 2026-06-10T15:45+02:00 [TOOL] `npm run lint`, `npm run test`, and `npm run build` passed after adding GitHub Actions Pages deployment.
 - 2026-06-10T15:45+02:00 [TOOL] Workflow command scan confirmed `.github/workflows/build.yml` uses `pages deploy dist --project-name web-zakynthos --branch main`.
 - 2026-06-10T15:45+02:00 [TOOL] Offline workflow YAML parser was unavailable locally (`ruby`, PyYAML, `powershell-yaml`, and `actionlint` missing).
+- 2026-06-11T08:59+02:00 [TOOL] `npm run lint`, `npm run test`, `npm run build`, and `git diff --check` passed after structured editing update; diff check only reported CRLF normalization warnings.

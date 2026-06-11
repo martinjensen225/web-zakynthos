@@ -1,6 +1,6 @@
 # Zakynthos Shared Trip Planner
 
-Mobile-first shared trip planner and phone guide for a September trip to Zakynthos, Greece. The app keeps the original guide-style pages while storing trip content, notes, favorites, and checklist progress in protected Cloudflare D1 storage.
+Mobile-first shared trip planner and phone guide for Martin and Marta's September trip to Zakynthos, Greece. The app keeps guide-style pages while storing trip content, notes, favorites, and checklist progress in protected Cloudflare D1 storage.
 
 ## Tech Stack
 
@@ -21,7 +21,7 @@ npm run build
 npm run preview
 ```
 
-`npm run preview` serves the static build only. It does not run the API. Use Cloudflare Wrangler for full local API testing.
+`npm run preview` serves the static build only. It does not run the API. Use Cloudflare Wrangler for full local API testing and for checking the editor against a local D1 database.
 
 ## Local Backend Setup
 
@@ -149,7 +149,7 @@ Generate one hash per editor. Use a different random salt per editor, and do not
 
 ```powershell
 npm run hash:editor -- martin "choose-a-password" "choose-a-random-salt"
-npm run hash:editor -- girlfriend "choose-a-password" "choose-another-random-salt"
+npm run hash:editor -- marta "choose-a-password" "choose-another-random-salt"
 ```
 
 Each command prints a one-user JSON array. Combine the generated objects into one array for `EDITOR_USERS_JSON`:
@@ -163,8 +163,8 @@ Each command prints a one-user JSON array. Combine the generated objects into on
     "passwordHash": "generated-password-hash"
   },
   {
-    "username": "girlfriend",
-    "displayName": "Girlfriend",
+    "username": "marta",
+    "displayName": "Marta",
     "salt": "choose-another-random-salt",
     "passwordHash": "generated-password-hash"
   }
@@ -442,6 +442,18 @@ npx wrangler pages deploy
 
 The original `content/*.json` files are seed data. Runtime edits are saved in D1 and are not written back to source files.
 
+## Website Editing
+
+Signed-in editors use the `Edit trip` button on each page. Edit mode shows structured controls for the sections used by that page, including add and remove buttons for highlights, quick links, itinerary days, places, attractions, restaurants, packing items, budget notes, open questions, and during-trip guide items.
+
+Each section is saved as a D1-backed `trip_sections` record. The client keeps an unsaved draft in browser `localStorage` only until the editor saves or resets that section. Saved changes are loaded from D1 by all users and devices through `/api/trip`.
+
+Notes, favorites, and the visible planning checklist use dedicated API endpoints and tables because they are edited frequently while planning or traveling. They are not stored in browser-only state.
+
+Section saves validate the edited section and the merged full trip before writing to D1. This prevents common broken states such as removing a location that is still referenced by an itinerary day, restaurant, attraction, or stay record.
+
+The advanced JSON drawer remains available for careful bulk edits, but normal add, update, and remove workflows should use the structured controls.
+
 ## API
 
 - `GET /api/session`
@@ -466,6 +478,6 @@ Cloudflare Pages, Pages Functions, and D1 have free-tier quotas suitable for a s
 ## Known Limitations
 
 - The app uses normal save/refresh behavior, not real-time collaborative editing.
-- Section editors use JSON for broad trip content changes.
+- Section editors save whole content sections at a time, so two editors should refresh before editing the same section in parallel.
 - Draft section edits are kept in browser `localStorage` until saved or reset.
 - Real booking details, private addresses, flight numbers, and emergency contacts should be entered through the protected app, not committed into seed JSON.
