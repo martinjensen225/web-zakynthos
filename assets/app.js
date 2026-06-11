@@ -216,16 +216,19 @@ function list(items, className = 'plain-list') {
 function editField(sectionKey, path, label, value, options = {}) {
   const type = options.type ?? 'text';
   const pathJson = pathAttr(path);
+  const labelClass = options.hideLabel ? ' class="visually-hidden"' : '';
+  const fieldClass = options.inline ? 'edit-field inline-text-field' : 'edit-field';
+  const placeholder = options.placeholder ? `placeholder="${escapeHtml(options.placeholder)}"` : '';
   if (type === 'checkbox') {
-    return `<label class="edit-field checkbox-field"><input type="checkbox" data-inline-section="${sectionKey}" data-inline-path="${pathJson}" data-inline-type="boolean" ${value ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`;
+    return `<label class="${fieldClass} checkbox-field"><input type="checkbox" data-inline-section="${sectionKey}" data-inline-path="${pathJson}" data-inline-type="boolean" ${value ? 'checked' : ''}><span${labelClass}>${escapeHtml(label)}</span></label>`;
   }
   if (type === 'textarea') {
-    return `<label class="edit-field"><span>${escapeHtml(label)}</span><textarea data-inline-section="${sectionKey}" data-inline-path="${pathJson}" rows="${options.rows ?? 3}" ${options.required ? 'required' : ''}>${escapeHtml(value)}</textarea></label>`;
+    return `<label class="${fieldClass}"><span${labelClass}>${escapeHtml(label)}</span><textarea data-inline-section="${sectionKey}" data-inline-path="${pathJson}" rows="${options.rows ?? 3}" ${placeholder} ${options.required ? 'required' : ''}>${escapeHtml(value)}</textarea></label>`;
   }
   if (type === 'csv') {
-    return `<label class="edit-field"><span>${escapeHtml(label)}</span><input data-inline-section="${sectionKey}" data-inline-path="${pathJson}" data-inline-type="csv" value="${escapeHtml((value ?? []).join(', '))}"></label>`;
+    return `<label class="${fieldClass}"><span${labelClass}>${escapeHtml(label)}</span><input data-inline-section="${sectionKey}" data-inline-path="${pathJson}" data-inline-type="csv" value="${escapeHtml((value ?? []).join(', '))}" ${placeholder}></label>`;
   }
-  return `<label class="edit-field"><span>${escapeHtml(label)}</span><input type="${type}" data-inline-section="${sectionKey}" data-inline-path="${pathJson}" value="${escapeHtml(value)}" ${options.required ? 'required' : ''}></label>`;
+  return `<label class="${fieldClass}"><span${labelClass}>${escapeHtml(label)}</span><input type="${type}" data-inline-section="${sectionKey}" data-inline-path="${pathJson}" value="${escapeHtml(value)}" ${placeholder} ${options.required ? 'required' : ''}></label>`;
 }
 
 function editSelect(sectionKey, path, label, value, choices) {
@@ -236,6 +239,50 @@ function editSelect(sectionKey, path, label, value, choices) {
         ${choices.map((choice) => `<option value="${escapeHtml(choice)}" ${choice === value ? 'selected' : ''}>${escapeHtml(choice)}</option>`).join('')}
       </select>
     </label>
+  `;
+}
+
+function placePicker(sectionKey, path, selectedValue, options = {}) {
+  const multiple = Boolean(options.multiple);
+  const selected = new Set(multiple ? selectedValue ?? [] : selectedValue ? [selectedValue] : []);
+  const locations = sectionValue('locations');
+  return `
+    <div class="place-picker">
+      <p>${escapeHtml(options.label ?? 'Places')}</p>
+      <div class="chip-grid">
+        ${locations.map((location) => `
+          <button class="place-chip" type="button" data-place-section="${sectionKey}" data-place-path="${pathAttr(path)}" data-place-id="${escapeHtml(location.id)}" data-place-mode="${multiple ? 'multiple' : 'single'}" aria-pressed="${selected.has(location.id)}">
+            ${escapeHtml(location.name)}
+          </button>
+        `).join('')}
+      </div>
+      <a class="text-link small-link" href="./map.html">Add or rename places on the Map page</a>
+    </div>
+  `;
+}
+
+function quickLinkPicker(link, index) {
+  const pages = [
+    ['./itinerary.html', 'Itinerary'],
+    ['./map.html', 'Map'],
+    ['./stay.html', 'Stay details'],
+    ['./planning.html', 'Planning board'],
+    ['./guide.html', 'During trip'],
+    ['./food.html', 'Food'],
+    ['./attractions.html', 'Explore']
+  ];
+  const known = pages.some(([href]) => href === link.href);
+  return `
+    <div class="quick-link-picker">
+      ${editField('quickLinks', [index, 'label'], 'Label', link.label, { inline: true, hideLabel: true, placeholder: 'Button label' })}
+      <label class="edit-field inline-text-field">
+        <span class="visually-hidden">Page</span>
+        <select data-inline-section="quickLinks" data-inline-path="${pathAttr([index, 'href'])}">
+          ${pages.map(([href, label]) => `<option value="${href}" ${href === link.href ? 'selected' : ''}>${label}</option>`).join('')}
+          <option value="${escapeHtml(link.href)}" ${known ? '' : 'selected'}>Custom link</option>
+        </select>
+      </label>
+    </div>
   `;
 }
 
@@ -396,8 +443,7 @@ function editableHighlight(highlight, index, total) {
 function editableQuickLink(link, index, total) {
   return `
     <article class="quick-link editable-quick-link" ${editableItemAttrs('quickLinks', [], index)}>
-      ${editField('quickLinks', [index, 'label'], 'Label', link.label)}
-      ${editField('quickLinks', [index, 'href'], 'Link', link.href)}
+      ${quickLinkPicker(link, index)}
       ${editActions('quickLinks', [], index, total)}
     </article>
   `;
@@ -438,13 +484,23 @@ function editableDay(day, index, total) {
     title: day.label,
     meta: day.date,
     body: `
-      <div class="inline-edit-form">
-        ${editField('itinerary', [index, 'label'], 'Label', day.label)}
-        ${editField('itinerary', [index, 'date'], 'Date', day.date)}
-        ${editField('itinerary', [index, 'focus'], 'Focus', day.focus, { type: 'textarea', rows: 2 })}
+      <div class="same-card-editor">
+        <div class="editable-card-heading">
+          ${editField('itinerary', [index, 'date'], 'Date', day.date, { inline: true, hideLabel: true, placeholder: 'Date' })}
+          ${editField('itinerary', [index, 'label'], 'Label', day.label, { inline: true, hideLabel: true, placeholder: 'Day label' })}
+          ${editField('itinerary', [index, 'focus'], 'Focus', day.focus, { type: 'textarea', rows: 2, inline: true, hideLabel: true, placeholder: 'Day focus' })}
+        </div>
         <div class="day-grid">${['morning', 'afternoon', 'evening'].map((period) => {
           const block = day[period];
-          return `<section class="time-block editable-block"><h3>${period}</h3>${editField('itinerary', [index, period, 'title'], 'Title', block.title)}${editField('itinerary', [index, period, 'plan'], 'Plan', block.plan, { type: 'textarea' })}${editField('itinerary', [index, period, 'notes'], 'Notes', block.notes ?? '', { type: 'textarea', rows: 2 })}${editField('itinerary', [index, period, 'locationIds'], 'Location ids', block.locationIds ?? [], { type: 'csv' })}</section>`;
+          return `
+            <section class="time-block editable-block">
+              <p class="card-meta">${period}</p>
+              ${editField('itinerary', [index, period, 'title'], 'Title', block.title, { inline: true, hideLabel: true, placeholder: 'Title' })}
+              ${editField('itinerary', [index, period, 'plan'], 'Plan', block.plan, { type: 'textarea', inline: true, hideLabel: true, placeholder: 'Plan' })}
+              ${editField('itinerary', [index, period, 'notes'], 'Notes', block.notes ?? '', { type: 'textarea', rows: 2, inline: true, hideLabel: true, placeholder: 'Optional notes' })}
+              ${placePicker('itinerary', [index, period, 'locationIds'], block.locationIds ?? [], { multiple: true, label: 'Linked places' })}
+            </section>
+          `;
         }).join('')}</div>
         ${editActions('itinerary', [], index, total)}
       </div>
@@ -487,14 +543,14 @@ function editableAttraction(attraction, index, total) {
     meta: attraction.area,
     image: attraction.image,
     body: `
-      <div class="inline-edit-form">
-        ${editField('attractions', [index, 'name'], 'Title', attraction.name)}
-        ${editField('attractions', [index, 'area'], 'Area', attraction.area)}
-        ${editField('attractions', [index, 'category'], 'Category', attraction.category)}
-        ${editField('attractions', [index, 'summary'], 'Description', attraction.summary, { type: 'textarea' })}
-        ${editField('attractions', [index, 'bestFor'], 'Best for', attraction.bestFor, { type: 'textarea', rows: 2 })}
-        ${editField('attractions', [index, 'locationId'], 'Map place id', attraction.locationId ?? '')}
-        ${editField('attractions', [index, 'image'], 'Image URL or path', attraction.image ?? '')}
+      <div class="same-card-editor">
+        ${editField('attractions', [index, 'area'], 'Area', attraction.area, { inline: true, hideLabel: true, placeholder: 'Area' })}
+        ${editField('attractions', [index, 'name'], 'Title', attraction.name, { inline: true, hideLabel: true, placeholder: 'Title' })}
+        ${editField('attractions', [index, 'category'], 'Category', attraction.category, { inline: true, hideLabel: true, placeholder: 'Category' })}
+        ${editField('attractions', [index, 'summary'], 'Description', attraction.summary, { type: 'textarea', inline: true, hideLabel: true, placeholder: 'Description' })}
+        ${editField('attractions', [index, 'bestFor'], 'Best for', attraction.bestFor, { type: 'textarea', rows: 2, inline: true, hideLabel: true, placeholder: 'Best for' })}
+        ${placePicker('attractions', [index, 'locationId'], attraction.locationId ?? '', { label: 'Map place' })}
+        <details class="optional-edit"><summary>Image</summary>${editField('attractions', [index, 'image'], 'Image URL', attraction.image ?? '', { inline: true, hideLabel: true, placeholder: 'Paste image URL or ./public/...' })}</details>
         ${editField('attractions', [index, 'mustDo'], 'Must do', attraction.mustDo ?? false, { type: 'checkbox' })}
         ${editActions('attractions', [], index, total)}
       </div>
@@ -526,15 +582,15 @@ function editableStay(stay) {
     image: stay.image,
     body: `
       ${sectionToolbar('stay', 'Stay details')}
-      <div class="inline-edit-form">
-        ${editField('stay', ['name'], 'Name', stay.name)}
-        ${editField('stay', ['address'], 'Address', stay.address)}
-        ${editField('stay', ['checkIn'], 'Check-in', stay.checkIn)}
-        ${editField('stay', ['checkOut'], 'Check-out', stay.checkOut)}
-        ${editField('stay', ['contact'], 'Contact', stay.contact, { type: 'textarea', rows: 2 })}
-        ${editField('stay', ['bookingReference'], 'Booking reference', stay.bookingReference)}
-        ${editField('stay', ['locationId'], 'Map place id', stay.locationId)}
-        ${editField('stay', ['image'], 'Image URL or path', stay.image ?? '')}
+      <div class="same-card-editor">
+        ${editField('stay', ['name'], 'Name', stay.name, { inline: true, hideLabel: true, placeholder: 'Stay name' })}
+        ${editField('stay', ['address'], 'Address', stay.address, { inline: true, hideLabel: true, placeholder: 'Address' })}
+        ${editField('stay', ['checkIn'], 'Check-in', stay.checkIn, { inline: true })}
+        ${editField('stay', ['checkOut'], 'Check-out', stay.checkOut, { inline: true })}
+        ${editField('stay', ['contact'], 'Contact', stay.contact, { type: 'textarea', rows: 2, inline: true })}
+        ${editField('stay', ['bookingReference'], 'Booking reference', stay.bookingReference, { inline: true })}
+        ${placePicker('stay', ['locationId'], stay.locationId, { label: 'Map place' })}
+        <details class="optional-edit"><summary>Image</summary>${editField('stay', ['image'], 'Image URL', stay.image ?? '', { inline: true, hideLabel: true, placeholder: 'Paste image URL or ./public/...' })}</details>
         ${simpleListEditor('stay', ['notes'], stay.notes, 'Stay note')}
       </div>
     `
@@ -586,14 +642,14 @@ function editableRestaurant(restaurant, index, total) {
     meta: restaurant.area,
     image: restaurant.image,
     body: `
-      <div class="inline-edit-form">
-        ${editField('restaurants', [index, 'name'], 'Title', restaurant.name)}
-        ${editField('restaurants', [index, 'area'], 'Area', restaurant.area)}
+      <div class="same-card-editor">
+        ${editField('restaurants', [index, 'area'], 'Area', restaurant.area, { inline: true, hideLabel: true, placeholder: 'Area' })}
+        ${editField('restaurants', [index, 'name'], 'Title', restaurant.name, { inline: true, hideLabel: true, placeholder: 'Title' })}
         ${editSelect('restaurants', [index, 'status'], 'Status', restaurant.status, ['placeholder', 'wishlist', 'planned', 'booked', 'confirmed'])}
-        ${editField('restaurants', [index, 'cuisine'], 'Cuisine', restaurant.cuisine)}
-        ${editField('restaurants', [index, 'notes'], 'Description', restaurant.notes, { type: 'textarea' })}
-        ${editField('restaurants', [index, 'locationId'], 'Map place id', restaurant.locationId ?? '')}
-        ${editField('restaurants', [index, 'image'], 'Image URL or path', restaurant.image ?? '')}
+        ${editField('restaurants', [index, 'cuisine'], 'Cuisine', restaurant.cuisine, { inline: true, hideLabel: true, placeholder: 'Cuisine' })}
+        ${editField('restaurants', [index, 'notes'], 'Description', restaurant.notes, { type: 'textarea', inline: true, hideLabel: true, placeholder: 'Description' })}
+        ${placePicker('restaurants', [index, 'locationId'], restaurant.locationId ?? '', { label: 'Map place' })}
+        <details class="optional-edit"><summary>Image</summary>${editField('restaurants', [index, 'image'], 'Image URL', restaurant.image ?? '', { inline: true, hideLabel: true, placeholder: 'Paste image URL or ./public/...' })}</details>
         ${editActions('restaurants', [], index, total)}
       </div>
     `,
@@ -631,14 +687,13 @@ function editableLocation(location, index, total) {
     meta: location.area,
     image: location.image,
     body: `
-      <div class="inline-edit-form">
-        ${editField('locations', [index, 'id'], 'Place id', location.id)}
-        ${editField('locations', [index, 'name'], 'Title', location.name)}
-        ${editField('locations', [index, 'area'], 'Area', location.area)}
-        ${editField('locations', [index, 'category'], 'Category', location.category)}
-        ${editField('locations', [index, 'mapQuery'], 'Google Maps search', location.mapQuery)}
-        ${editField('locations', [index, 'notes'], 'Description', location.notes ?? '', { type: 'textarea' })}
-        ${editField('locations', [index, 'image'], 'Image URL or path', location.image ?? '')}
+      <div class="same-card-editor">
+        ${editField('locations', [index, 'name'], 'Title', location.name, { inline: true, hideLabel: true, placeholder: 'Place name' })}
+        ${editField('locations', [index, 'area'], 'Area', location.area, { inline: true, hideLabel: true, placeholder: 'Area' })}
+        ${editField('locations', [index, 'category'], 'Category', location.category, { inline: true, hideLabel: true, placeholder: 'Category' })}
+        ${editField('locations', [index, 'mapQuery'], 'Google Maps search', location.mapQuery, { inline: true })}
+        ${editField('locations', [index, 'notes'], 'Description', location.notes ?? '', { type: 'textarea', inline: true, hideLabel: true, placeholder: 'Description' })}
+        <details class="optional-edit"><summary>Image</summary>${editField('locations', [index, 'image'], 'Image URL', location.image ?? '', { inline: true, hideLabel: true, placeholder: 'Paste image URL or ./public/...' })}</details>
         ${editActions('locations', [], index, total)}
       </div>
     `,
@@ -971,6 +1026,29 @@ function setupInlineEditing() {
       const draft = getSectionDraft(sectionKey);
       const items = getAtPath(draft, parsePath(button.dataset.movePath));
       moveArrayItem(items, Number(button.dataset.moveIndex), Number(button.dataset.moveIndex) + Number(button.dataset.moveDirection));
+      saveDraft(sectionKey);
+      renderPage();
+    });
+  });
+
+  document.querySelectorAll('[data-place-section]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const sectionKey = button.dataset.placeSection;
+      const draft = getSectionDraft(sectionKey);
+      const path = parsePath(button.dataset.placePath);
+      const mode = button.dataset.placeMode;
+      const placeId = button.dataset.placeId;
+      if (mode === 'multiple') {
+        const current = new Set(getAtPath(draft, path) ?? []);
+        if (current.has(placeId)) {
+          current.delete(placeId);
+        } else {
+          current.add(placeId);
+        }
+        setAtPath(draft, path, [...current]);
+      } else {
+        setAtPath(draft, path, placeId);
+      }
       saveDraft(sectionKey);
       renderPage();
     });

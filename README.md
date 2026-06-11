@@ -444,7 +444,9 @@ The original `content/*.json` files are seed data. Runtime edits are saved in D1
 
 ## Website Editing
 
-Signed-in editors use the `Edit trip` button on each page. Edit mode changes the visible trip cards into editable cards, including fields for titles, descriptions, dates, links, map queries, status, notes, and optional image URLs or image paths.
+Signed-in editors use the `Edit trip` button on each page. Edit mode keeps the visible trip cards in place and makes their existing text editable, including titles, descriptions, dates, map queries, status, notes, and optional image URLs or image paths.
+
+Places are connected with clickable chips that show normal place names, such as `Hotel`, `Blue Caves`, or `Zakynthos Town`. Editors do not need to know or type internal location IDs. Quick links use a page picker for the app's normal pages instead of requiring file paths.
 
 Card and list sections support add, delete, move up, move down, and drag-and-drop reordering where the order matters. This covers highlights, quick links, itinerary days, places, attractions, restaurants, packing items, budget notes, open questions, and during-trip guide items.
 
