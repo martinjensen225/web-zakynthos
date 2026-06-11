@@ -5,55 +5,72 @@
     "area": "Add area",
     "category": "Stay",
     "mapQuery": "Zakynthos Greece hotel",
-    "notes": "Replace with the exact hotel name or address after booking."
+    "notes": "Replace with the exact hotel name or address after booking.",
+    "status": "Needs attention"
+  },
+  {
+    "id": "zakynthos-airport",
+    "name": "Zakynthos International Airport",
+    "area": "South Zakynthos",
+    "category": "Transport",
+    "mapQuery": "Zakynthos International Airport Greece",
+    "notes": "Add flight and transfer timing after booking.",
+    "status": "Needs attention"
   },
   {
     "id": "navagio-viewpoint",
     "name": "Navagio viewpoint area",
     "area": "Northwest Zakynthos",
     "category": "Viewpoint",
-    "mapQuery": "Navagio Viewpoint Zakynthos Greece"
+    "mapQuery": "Navagio Viewpoint Zakynthos Greece",
+    "status": "Suggested"
   },
   {
     "id": "blue-caves",
     "name": "Blue Caves",
     "area": "North Zakynthos",
     "category": "Boat trip",
-    "mapQuery": "Blue Caves Zakynthos Greece"
+    "mapQuery": "Blue Caves Zakynthos Greece",
+    "status": "Needs attention"
   },
   {
     "id": "porto-limnionas",
     "name": "Porto Limnionas",
     "area": "West coast",
     "category": "Beach",
-    "mapQuery": "Porto Limnionas Zakynthos Greece"
+    "mapQuery": "Porto Limnionas Zakynthos Greece",
+    "status": "Suggested"
   },
   {
     "id": "gerakas",
     "name": "Gerakas Beach",
     "area": "Vasilikos",
     "category": "Beach",
-    "mapQuery": "Gerakas Beach Zakynthos Greece"
+    "mapQuery": "Gerakas Beach Zakynthos Greece",
+    "status": "Suggested"
   },
   {
     "id": "bochali",
     "name": "Bochali",
     "area": "Above Zakynthos Town",
     "category": "Village",
-    "mapQuery": "Bochali Zakynthos Greece"
+    "mapQuery": "Bochali Zakynthos Greece",
+    "status": "Discussing"
   },
   {
     "id": "zakynthos-town",
     "name": "Zakynthos Town",
     "area": "East coast",
     "category": "Town",
-    "mapQuery": "Zakynthos Town Greece"
+    "mapQuery": "Zakynthos Town Greece",
+    "status": "Suggested"
   },
   {
     "id": "anafonitria",
     "name": "Anafonitria",
     "area": "Northwest inland",
     "category": "Village",
-    "mapQuery": "Anafonitria Zakynthos Greece"
+    "mapQuery": "Anafonitria Zakynthos Greece",
+    "status": "Idea"
   }
 ]

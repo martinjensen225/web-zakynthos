@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { validateFullTrip } from '../functions/_lib/validation.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const requiredPages = ['index.html', 'itinerary.html', 'attractions.html', 'stay.html', 'food.html', 'map.html', 'planning.html', 'guide.html'];
+const requiredPages = ['index.html', 'itinerary.html', 'map.html', 'budget.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
 const contentFiles = [
   'meta.json',
   'highlights.json',
@@ -77,6 +77,11 @@ assert(Array.isArray(quickLinks) && quickLinks.length > 0, 'At least one quick l
 assert(Array.isArray(flights.notes), 'flights.notes must be an array.');
 assert(Array.isArray(stay.notes), 'stay.notes must be an array.');
 assert(Array.isArray(planning.checklist), 'planning.checklist must be an array.');
+assert(Array.isArray(planning.decisions), 'planning.decisions must be an array.');
+assert(Array.isArray(planning.tasks), 'planning.tasks must be an array.');
+assert(Array.isArray(planning.packing), 'planning.packing must be an array.');
+assert(Array.isArray(planning.budget.expenses), 'planning.budget.expenses must be an array.');
+assert(Array.isArray(planning.documents), 'planning.documents must be an array.');
 assert(Array.isArray(duringTrip.emergency), 'duringTrip.emergency must be an array.');
 
 validateFullTrip({
@@ -95,9 +100,10 @@ validateFullTrip({
 
 const locationIds = new Set(locations.map((location) => location.id));
 for (const day of itinerary) {
-  for (const period of ['morning', 'afternoon', 'evening']) {
-    for (const locationId of day[period].locationIds ?? []) {
-      assert(locationIds.has(locationId), `Unknown location "${locationId}" in ${day.id}.`);
+  assert(Array.isArray(day.items) && day.items.length > 0, `${day.id} must have plan items.`);
+  for (const item of day.items) {
+    if (item.locationId) {
+      assert(locationIds.has(item.locationId), `Unknown location "${item.locationId}" in ${item.id}.`);
     }
   }
 }
@@ -125,6 +131,9 @@ assert(!app.includes('zakynthos:favorites'), 'Favorites must not use local-only 
 assert(!app.includes('zakynthos:notes'), 'Notes must not use local-only storage.');
 assert(!app.includes('zakynthos:checks'), 'Checklist state must not use local-only storage.');
 assert(app.includes('setupInlineEditing'), 'Editor mode must edit the visible trip cards inline.');
+assert(app.includes('floatingAdd'), 'Primary planning screens must expose a floating Add control.');
+assert(app.includes('renderBudget'), 'The app must render a Budget section.');
+assert(app.includes('renderMore'), 'The app must render More tools for ideas, decisions, documents, packing, and tasks.');
 assert(app.includes('data-add-path'), 'Editor mode must support adding section items.');
 assert(app.includes('data-remove-path'), 'Editor mode must support removing section items.');
 assert(app.includes('saveSection(sectionKey'), 'Structured section edits must save through the API.');

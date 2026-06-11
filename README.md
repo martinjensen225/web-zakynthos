@@ -1,6 +1,14 @@
-# Zakynthos Shared Trip Planner
+# Zakynthos Together
 
-Mobile-first shared trip planner and phone guide for Martin and Marta's September trip to Zakynthos, Greece. The app keeps guide-style pages while storing trip content, notes, favorites, and checklist progress in protected Cloudflare D1 storage.
+Mobile-first shared trip planning app for Martin and Marta's September trip to Zakynthos, Greece. The app acts as a calm trip cockpit for daily plans, open decisions, saved ideas, budget, documents, packing, tasks, map links, and travel-day essentials.
+
+The primary app structure is:
+
+- Overview: trip hero, countdown, readiness, next action, open items, day preview, and quick actions.
+- Plan: day-by-day timeline cards for activities, transport, accommodation, meals, reminders, notes, and flexible time.
+- Map: saved places, trip layers, and Google Maps search links without a paid Maps API key.
+- Budget: target, estimates, confirmed costs, and expense cards.
+- More: ideas, decisions, document records, packing, tasks, stay details, and travel wallet.
 
 ## Tech Stack
 
@@ -437,18 +445,33 @@ npx wrangler pages deploy
 
 - `trip_sections`: JSON sections for `meta`, `highlights`, `quickLinks`, `flights`, `stay`, `locations`, `itinerary`, `attractions`, `restaurants`, `planning`, and `duringTrip`.
 - `notes`: shared notes attached to page/card targets.
-- `favorites`: shared saved targets used by attraction, restaurant, map, stay, itinerary, and guide pages.
-- `checklist_items`: shared planning checklist items and completion state.
+- `favorites`: shared saved targets used by idea, food, map, stay, plan, and wallet cards.
+- `checklist_items`: shared checklist items and completion state.
+
+The `itinerary` section stores day objects with timeline `items`. Each item can represent an activity, transport, accommodation, meal, reminder, task, note, or free-time block.
+
+The `planning` section stores the MVP collaboration tools:
+
+- `decisions`
+- `tasks`
+- `packing`
+- `budget`
+- `documents`
+- `openQuestions`
+
+Document entries are manual records only. The app does not upload, store, or serve document files yet.
 
 The original `content/*.json` files are seed data. Runtime edits are saved in D1 and are not written back to source files.
 
 ## Website Editing
 
-Signed-in editors use the `Edit trip` button on each page. Edit mode keeps the visible trip cards in place and makes their existing text editable, including titles, descriptions, dates, map queries, status, notes, and optional image URLs or image paths.
+Signed-in editors use the `Edit trip` button on each page. Edit mode keeps the visible trip cards in place and makes their existing text editable, including titles, descriptions, dates, map queries, statuses, costs, booking notes, document records, task details, packing items, and optional image URLs or image paths.
 
-Places are connected with clickable chips that show normal place names, such as `Hotel`, `Blue Caves`, or `Zakynthos Town`. Editors do not need to know or type internal location IDs. Quick links use a page picker for the app's normal pages instead of requiring file paths.
+The primary planning screens include a floating Add button. Added items are saved as local section drafts first, then written to D1 when an editor saves the affected section. This follows the existing section-version conflict model and avoids silent overwrites.
 
-Card and list sections support add, delete, move up, move down, and drag-and-drop reordering where the order matters. This covers highlights, quick links, itinerary days, places, attractions, restaurants, packing items, budget notes, open questions, and during-trip guide items.
+Places are connected with clickable chips that show normal place names, such as `Hotel`, `Blue Caves`, or `Zakynthos Town`. Editors do not need to know or type internal location IDs for normal map/place edits. Quick links use a page picker for the app's normal pages instead of requiring file paths.
+
+Card and list sections support add, delete, move up, move down, and drag-and-drop reordering where the order matters. This covers highlights, quick links, itinerary days, itinerary items, places, ideas, restaurants, decisions, expenses, document records, packing items, tasks, and travel-wallet items.
 
 Each section is saved as a D1-backed `trip_sections` record. The client keeps an unsaved draft in browser `localStorage` only until the editor saves or resets that section. Saved changes are loaded from D1 by all users and devices through `/api/trip`.
 
@@ -477,7 +500,9 @@ Editor users are configured through the encrypted `EDITOR_USERS_JSON` Pages secr
 
 ## Cost Notes
 
-Cloudflare Pages, Pages Functions, and D1 have free-tier quotas suitable for a small two-person trip planner. No paid third-party APIs are required.
+Cloudflare Pages, Pages Functions, and D1 remain the recommended MVP architecture. They provide static hosting, protected API routes, signed editor sessions, and shared persistence without adding Azure resources or a paid map API.
+
+Azure is not required for the current MVP. A future Azure-backed variant would only be justified if the app needs Azure-native authentication, richer API hosting, Blob Storage, or another Azure service that should be managed in the existing subscription.
 
 ## Known Limitations
 
@@ -485,3 +510,7 @@ Cloudflare Pages, Pages Functions, and D1 have free-tier quotas suitable for a s
 - Section editors save whole content sections at a time, so two editors should refresh before editing the same section in parallel.
 - Draft section edits are kept in browser `localStorage` until saved or reset.
 - Real booking details, private addresses, flight numbers, and emergency contacts should be entered through the protected app, not committed into seed JSON.
+- Document entries are metadata records only. File upload, QR/barcode storage, and offline document packs are not implemented.
+- Map support uses Google Maps search links. Embedded maps, geocoding, routing, distance checks, and location-aware nearby suggestions are future features.
+- Authentication is a small signed editor-session system configured through Cloudflare secrets. Invite links, OAuth, item-level roles, and approval workflows are future features.
+- Change history is limited to section versions and `updated_by` metadata in D1. Item-level version history and undo after save are not implemented.

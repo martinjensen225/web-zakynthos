@@ -1,6 +1,6 @@
 [
-  { "label": "Today plan", "href": "./itinerary.html" },
-  { "label": "Map links", "href": "./map.html" },
-  { "label": "Stay details", "href": "./stay.html" },
-  { "label": "During trip", "href": "./guide.html" }
+  { "label": "Plan timeline", "href": "./itinerary.html" },
+  { "label": "Saved places", "href": "./map.html" },
+  { "label": "Budget", "href": "./budget.html" },
+  { "label": "Travel wallet", "href": "./guide.html" }
 ]

@@ -42,10 +42,27 @@ function assertBoolean(value, path) {
   }
 }
 
+function assertNumber(value, path) {
+  if (value !== undefined) {
+    assert(typeof value === 'number' && Number.isFinite(value), `${path} must be a number.`);
+  }
+}
+
 function assertStringArray(value, path) {
   assertArray(value, path);
   for (const item of value) {
     assert(typeof item === 'string', `${path} items must be text.`);
+  }
+}
+
+function validateTextOrObjectList(value, path, objectValidator) {
+  assertArray(value, path);
+  for (const [index, item] of value.entries()) {
+    if (typeof item === 'string') {
+      assertText(item, `${path}[${index}]`);
+    } else {
+      objectValidator(item, `${path}[${index}]`);
+    }
   }
 }
 
@@ -57,6 +74,100 @@ function validatePeriod(value, path) {
   if (value.locationIds !== undefined) {
     assertStringArray(value.locationIds, `${path}.locationIds`);
   }
+}
+
+function validateItineraryItem(value, path) {
+  assert(isObject(value), `${path} must be an object.`);
+  assertText(value.id, `${path}.id`);
+  assertText(value.type, `${path}.type`);
+  assertText(value.title, `${path}.title`);
+  assertOptionalText(value.period, `${path}.period`);
+  assertOptionalText(value.time, `${path}.time`);
+  assertOptionalText(value.locationId, `${path}.locationId`);
+  assertOptionalText(value.status, `${path}.status`);
+  assertOptionalText(value.cost, `${path}.cost`);
+  assertOptionalText(value.booking, `${path}.booking`);
+  assertOptionalText(value.notes, `${path}.notes`);
+  assertOptionalText(value.documentId, `${path}.documentId`);
+}
+
+function validateDecision(value, path) {
+  assert(isObject(value), `${path} must be an object.`);
+  assertText(value.id, `${path}.id`);
+  assertText(value.title, `${path}.title`);
+  assertText(value.status, `${path}.status`);
+  assertOptionalText(value.type, `${path}.type`);
+  assertOptionalText(value.linkedItemId, `${path}.linkedItemId`);
+  assertOptionalText(value.finalChoice, `${path}.finalChoice`);
+  assertOptionalText(value.notes, `${path}.notes`);
+  if (value.options !== undefined) {
+    assertArray(value.options, `${path}.options`);
+    for (const [index, option] of value.options.entries()) {
+      assert(isObject(option), `${path}.options[${index}] must be an object.`);
+      assertText(option.id, `${path}.options[${index}].id`);
+      assertText(option.title, `${path}.options[${index}].title`);
+      assertOptionalText(option.martin, `${path}.options[${index}].martin`);
+      assertOptionalText(option.marta, `${path}.options[${index}].marta`);
+      assertOptionalText(option.notes, `${path}.options[${index}].notes`);
+    }
+  }
+}
+
+function validateTask(value, path) {
+  assert(isObject(value), `${path} must be an object.`);
+  assertText(value.id, `${path}.id`);
+  assertText(value.title, `${path}.title`);
+  assertText(value.status, `${path}.status`);
+  assertOptionalText(value.assignee, `${path}.assignee`);
+  assertOptionalText(value.dueDate, `${path}.dueDate`);
+  assertOptionalText(value.priority, `${path}.priority`);
+  assertOptionalText(value.linkedItemId, `${path}.linkedItemId`);
+  assertOptionalText(value.notes, `${path}.notes`);
+}
+
+function validatePackingItem(value, path) {
+  assert(isObject(value), `${path} must be an object.`);
+  assertText(value.id, `${path}.id`);
+  assertText(value.text, `${path}.text`);
+  assertOptionalText(value.owner, `${path}.owner`);
+  assertOptionalText(value.category, `${path}.category`);
+  assertBoolean(value.essential, `${path}.essential`);
+  assertBoolean(value.packed, `${path}.packed`);
+}
+
+function validateExpense(value, path) {
+  assert(isObject(value), `${path} must be an object.`);
+  assertText(value.id, `${path}.id`);
+  assertText(value.title, `${path}.title`);
+  assertNumber(value.amount, `${path}.amount`);
+  assertOptionalText(value.currency, `${path}.currency`);
+  assertOptionalText(value.category, `${path}.category`);
+  assertOptionalText(value.paidBy, `${path}.paidBy`);
+  assertOptionalText(value.splitBetween, `${path}.splitBetween`);
+  assertOptionalText(value.status, `${path}.status`);
+  assertOptionalText(value.linkedItemId, `${path}.linkedItemId`);
+  assertOptionalText(value.notes, `${path}.notes`);
+}
+
+function validateDocument(value, path) {
+  assert(isObject(value), `${path} must be an object.`);
+  assertText(value.id, `${path}.id`);
+  assertText(value.title, `${path}.title`);
+  assertText(value.type, `${path}.type`);
+  assertText(value.status, `${path}.status`);
+  assertOptionalText(value.linkedItemId, `${path}.linkedItemId`);
+  assertBoolean(value.important, `${path}.important`);
+  assertBoolean(value.offline, `${path}.offline`);
+  assertOptionalText(value.reference, `${path}.reference`);
+  assertOptionalText(value.notes, `${path}.notes`);
+}
+
+function validateQuestion(value, path) {
+  assert(isObject(value), `${path} must be an object.`);
+  assertText(value.id, `${path}.id`);
+  assertText(value.title, `${path}.title`);
+  assertOptionalText(value.status, `${path}.status`);
+  assertOptionalText(value.linkedDecisionId, `${path}.linkedDecisionId`);
 }
 
 export function validateSectionKey(sectionKey) {
@@ -74,6 +185,19 @@ export function validateSection(sectionKey, value) {
     assertText(value.endDate, 'meta.endDate');
     assertText(value.travelers, 'meta.travelers');
     assertText(value.subtitle, 'meta.subtitle');
+    assertOptionalText(value.coverImage, 'meta.coverImage');
+    assertOptionalText(value.coverAlt, 'meta.coverAlt');
+    if (value.mood !== undefined) {
+      assertStringArray(value.mood, 'meta.mood');
+    }
+    if (value.members !== undefined) {
+      assertArray(value.members, 'meta.members');
+      for (const [index, member] of value.members.entries()) {
+        assert(isObject(member), `meta.members[${index}] must be an object.`);
+        assertText(member.name, `meta.members[${index}].name`);
+        assertOptionalText(member.role, `meta.members[${index}].role`);
+      }
+    }
     return;
   }
 
@@ -126,6 +250,7 @@ export function validateSection(sectionKey, value) {
       assertText(location.mapQuery, 'locations.mapQuery');
       assertOptionalText(location.notes, 'locations.notes');
       assertOptionalText(location.image, 'locations.image');
+      assertOptionalText(location.status, 'locations.status');
     }
   }
 
@@ -143,16 +268,16 @@ export function validateSection(sectionKey, value) {
   }
 
   if (sectionKey === 'restaurants') {
-    const statuses = new Set(['placeholder', 'wishlist', 'planned', 'booked', 'confirmed']);
     for (const restaurant of value) {
       assertText(restaurant.name, 'restaurants.name');
       assertText(restaurant.area, 'restaurants.area');
       assertText(restaurant.status, 'restaurants.status');
-      assert(statuses.has(restaurant.status), `Unknown restaurant status "${restaurant.status}".`);
       assertText(restaurant.cuisine, 'restaurants.cuisine');
       assertText(restaurant.notes, 'restaurants.notes');
       assertOptionalText(restaurant.locationId, 'restaurants.locationId');
       assertOptionalText(restaurant.image, 'restaurants.image');
+      assertOptionalText(restaurant.price, 'restaurants.price');
+      assertOptionalText(restaurant.votes, 'restaurants.votes');
     }
   }
 
@@ -165,13 +290,47 @@ export function validateSection(sectionKey, value) {
       assertText(item.text, 'planning.checklist.text');
       assertText(item.status, 'planning.checklist.status');
     }
-    assertStringArray(value.packing, 'planning.packing');
-    assertStringArray(value.budgetNotes, 'planning.budgetNotes');
-    assertStringArray(value.openQuestions, 'planning.openQuestions');
+    validateTextOrObjectList(value.packing ?? [], 'planning.packing', validatePackingItem);
+    if (value.budgetNotes !== undefined) {
+      assertStringArray(value.budgetNotes, 'planning.budgetNotes');
+    }
+    validateTextOrObjectList(value.openQuestions ?? [], 'planning.openQuestions', validateQuestion);
+    if (value.decisions !== undefined) {
+      assertArray(value.decisions, 'planning.decisions');
+      for (const [index, decision] of value.decisions.entries()) {
+        validateDecision(decision, `planning.decisions[${index}]`);
+      }
+    }
+    if (value.tasks !== undefined) {
+      assertArray(value.tasks, 'planning.tasks');
+      for (const [index, task] of value.tasks.entries()) {
+        validateTask(task, `planning.tasks[${index}]`);
+      }
+    }
+    if (value.budget !== undefined) {
+      assert(isObject(value.budget), 'planning.budget must be an object.');
+      assertOptionalText(value.budget.currency, 'planning.budget.currency');
+      assertNumber(value.budget.target, 'planning.budget.target');
+      assertOptionalText(value.budget.comfort, 'planning.budget.comfort');
+      assertOptionalText(value.budget.notes, 'planning.budget.notes');
+      assertArray(value.budget.expenses ?? [], 'planning.budget.expenses');
+      for (const [index, expense] of (value.budget.expenses ?? []).entries()) {
+        validateExpense(expense, `planning.budget.expenses[${index}]`);
+      }
+    }
+    if (value.documents !== undefined) {
+      assertArray(value.documents, 'planning.documents');
+      for (const [index, document] of value.documents.entries()) {
+        validateDocument(document, `planning.documents[${index}]`);
+      }
+    }
   }
 
   if (sectionKey === 'duringTrip') {
     assert(isObject(value), 'duringTrip must be an object.');
+    if (value.wallet !== undefined) {
+      assertStringArray(value.wallet, 'duringTrip.wallet');
+    }
     assertStringArray(value.emergency, 'duringTrip.emergency');
     assertStringArray(value.transport, 'duringTrip.transport');
     assertStringArray(value.dailyEssentials, 'duringTrip.dailyEssentials');
@@ -183,9 +342,21 @@ export function validateSection(sectionKey, value) {
       assertText(day.id, 'itinerary.id');
       assertText(day.label, `${day.id}.label`);
       assertText(day.focus, `${day.id}.focus`);
-      validatePeriod(day.morning, `${day.id}.morning`);
-      validatePeriod(day.afternoon, `${day.id}.afternoon`);
-      validatePeriod(day.evening, `${day.id}.evening`);
+      assertOptionalText(day.date, `${day.id}.date`);
+      assertOptionalText(day.isoDate, `${day.id}.isoDate`);
+      assertOptionalText(day.destination, `${day.id}.destination`);
+      assertOptionalText(day.mood, `${day.id}.mood`);
+      assertOptionalText(day.balance, `${day.id}.balance`);
+      assertOptionalText(day.balanceReason, `${day.id}.balanceReason`);
+      if (Array.isArray(day.items)) {
+        for (const [index, item] of day.items.entries()) {
+          validateItineraryItem(item, `${day.id}.items[${index}]`);
+        }
+      } else {
+        validatePeriod(day.morning, `${day.id}.morning`);
+        validatePeriod(day.afternoon, `${day.id}.afternoon`);
+        validatePeriod(day.evening, `${day.id}.evening`);
+      }
     }
   }
 }
@@ -199,8 +370,17 @@ export function validateFullTrip(trip) {
   assert(locationIds.has(trip.stay.locationId), `Unknown stay location "${trip.stay.locationId}".`);
 
   for (const day of trip.itinerary) {
+    if (Array.isArray(day.items)) {
+      for (const item of day.items) {
+        if (item.locationId) {
+          assert(locationIds.has(item.locationId), `Unknown location "${item.locationId}" in ${item.id}.`);
+        }
+      }
+      continue;
+    }
+
     for (const period of ['morning', 'afternoon', 'evening']) {
-      for (const locationId of day[period].locationIds ?? []) {
+      for (const locationId of day[period]?.locationIds ?? []) {
         assert(locationIds.has(locationId), `Unknown location "${locationId}" in ${day.id}.`);
       }
     }

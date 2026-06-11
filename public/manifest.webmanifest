@@ -1,10 +1,10 @@
 {
-  "name": "Zakynthos September Guide",
-  "short_name": "Zakynthos",
+  "name": "Zakynthos Together",
+  "short_name": "TripTogether",
   "start_url": "../index.html",
   "display": "standalone",
-  "background_color": "#fffaf1",
-  "theme_color": "#0f6f7a",
+  "background_color": "#fbfaf7",
+  "theme_color": "#7a4a35",
   "icons": [
     {
       "src": "./favicon.svg",

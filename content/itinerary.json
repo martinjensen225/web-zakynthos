@@ -3,118 +3,392 @@
     "id": "day-1",
     "label": "Day 1",
     "date": "Arrival day",
+    "isoDate": "2026-09-01",
+    "destination": "Zakynthos",
     "focus": "Land, settle in, and keep the evening easy.",
-    "morning": {
-      "title": "Travel",
-      "plan": "Add outbound flight and airport plan.",
-      "notes": "Keep essentials in hand luggage: passports, cards, charger, swimwear."
-    },
-    "afternoon": {
-      "title": "Check in",
-      "plan": "Pick up transfer or rental car, check in, and unpack.",
-      "locationIds": ["hotel"]
-    },
-    "evening": {
-      "title": "First sunset",
-      "plan": "Choose an easy nearby dinner and a short walk.",
-      "notes": "Add restaurant once the stay area is confirmed."
-    }
+    "mood": "Soft landing",
+    "balance": "Relaxed",
+    "balanceReason": "One travel block, check-in, and a low-pressure first sunset.",
+    "items": [
+      {
+        "id": "item-outbound-flight",
+        "type": "Transport",
+        "period": "Morning",
+        "time": "",
+        "title": "Outbound flight to Zakynthos",
+        "locationId": "zakynthos-airport",
+        "status": "Needs attention",
+        "cost": "",
+        "booking": "Flight details missing",
+        "notes": "Add airport, airline, flight number, baggage, and check-in deadline."
+      },
+      {
+        "id": "item-arrival-transfer",
+        "type": "Transport",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Transfer to the stay",
+        "locationId": "hotel",
+        "status": "Discussing",
+        "cost": "",
+        "booking": "",
+        "notes": "Decide taxi, rental car, or transfer once the stay area is confirmed."
+      },
+      {
+        "id": "item-first-sunset",
+        "type": "Meal",
+        "period": "Evening",
+        "time": "",
+        "title": "Easy first sunset dinner",
+        "locationId": "hotel",
+        "status": "Idea",
+        "cost": "",
+        "booking": "",
+        "notes": "Pick something walkable and simple after travel."
+      }
+    ]
   },
   {
     "id": "day-2",
     "label": "Day 2",
-    "date": "Editable date",
+    "date": "Beach day",
+    "isoDate": "2026-09-02",
+    "destination": "Vasilikos or stay area",
     "focus": "Beach day and low-pressure exploring.",
-    "morning": {
-      "title": "Beach swim",
-      "plan": "Start with a calm beach after breakfast.",
-      "locationIds": ["gerakas"]
-    },
-    "afternoon": {
-      "title": "Coffee and shade",
-      "plan": "Slow lunch, beach time, and a rest back at the stay."
-    },
-    "evening": {
-      "title": "Town or village dinner",
-      "plan": "Dinner in Zakynthos Town or Bochali depending on energy.",
-      "locationIds": ["bochali", "zakynthos-town"]
-    }
+    "mood": "Slow morning",
+    "balance": "Balanced",
+    "balanceReason": "One main beach idea, shade time, and an optional town dinner.",
+    "items": [
+      {
+        "id": "item-gerakas-morning",
+        "type": "Activity",
+        "period": "Morning",
+        "time": "",
+        "title": "Gerakas Beach swim",
+        "locationId": "gerakas",
+        "status": "Suggested",
+        "cost": "",
+        "booking": "",
+        "notes": "A softer beach candidate for the first full morning."
+      },
+      {
+        "id": "item-shade-rest",
+        "type": "Free time",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Coffee, shade, and rest",
+        "locationId": "hotel",
+        "status": "Planned",
+        "cost": "",
+        "booking": "",
+        "notes": "Keep the first full day gentle."
+      },
+      {
+        "id": "item-town-or-bochali",
+        "type": "Meal",
+        "period": "Evening",
+        "time": "",
+        "title": "Zakynthos Town or Bochali dinner",
+        "locationId": "bochali",
+        "status": "Discussing",
+        "cost": "",
+        "booking": "",
+        "notes": "Choose based on energy, driving, and sunset timing."
+      }
+    ]
   },
   {
     "id": "day-3",
     "label": "Day 3",
-    "date": "Editable date",
-    "focus": "Boat-day candidate.",
-    "morning": {
-      "title": "Boat trip",
-      "plan": "Use this day for Blue Caves or another sea-cave route if weather is good.",
-      "locationIds": ["blue-caves"]
-    },
-    "afternoon": {
-      "title": "Swim stops",
-      "plan": "Add operator, meeting point, and route after booking."
-    },
-    "evening": {
-      "title": "Simple dinner",
-      "plan": "Plan an easy dinner near the hotel after a long sun day."
-    }
+    "date": "Boat-day candidate",
+    "isoDate": "2026-09-03",
+    "destination": "North coast",
+    "focus": "Use the best weather window for sea caves.",
+    "mood": "Bright water",
+    "balance": "Busy",
+    "balanceReason": "Boat days can be long, so the evening should stay simple.",
+    "items": [
+      {
+        "id": "item-blue-caves",
+        "type": "Activity",
+        "period": "Morning",
+        "time": "",
+        "title": "Blue Caves boat trip",
+        "locationId": "blue-caves",
+        "status": "Needs attention",
+        "cost": "",
+        "booking": "Operator not chosen",
+        "notes": "Check wind and sea conditions before booking."
+      },
+      {
+        "id": "item-swim-stops",
+        "type": "Activity",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Swim stops and lunch",
+        "locationId": "blue-caves",
+        "status": "Suggested",
+        "cost": "",
+        "booking": "",
+        "notes": "Add route, meeting point, and lunch idea once the operator is known."
+      },
+      {
+        "id": "item-simple-boat-dinner",
+        "type": "Meal",
+        "period": "Evening",
+        "time": "",
+        "title": "Simple dinner after the sun",
+        "locationId": "hotel",
+        "status": "Idea",
+        "cost": "",
+        "booking": "",
+        "notes": "Keep this flexible in case the boat day runs late."
+      }
+    ]
   },
   {
     "id": "day-4",
     "label": "Day 4",
-    "date": "Editable date",
-    "focus": "West coast cliffs and sunset.",
-    "morning": {
-      "title": "Slow start",
-      "plan": "Sleep in, breakfast, and pack water shoes if needed."
-    },
-    "afternoon": {
-      "title": "Rocky cove swim",
-      "plan": "Explore Porto Limnionas or another west coast swimming spot.",
-      "locationIds": ["porto-limnionas"]
-    },
-    "evening": {
-      "title": "Sunset viewpoint",
-      "plan": "Pick a viewpoint or terrace dinner on the west side.",
-      "locationIds": ["navagio-viewpoint"]
-    }
+    "date": "West coast day",
+    "isoDate": "2026-09-04",
+    "destination": "West coast",
+    "focus": "Rocky coves, cliffs, and a sunset moment.",
+    "mood": "Dramatic coast",
+    "balance": "Balanced",
+    "balanceReason": "One cove swim, one viewpoint, and enough room for the drive.",
+    "items": [
+      {
+        "id": "item-slow-start",
+        "type": "Free time",
+        "period": "Morning",
+        "time": "",
+        "title": "Slow start and pack water shoes",
+        "locationId": "hotel",
+        "status": "Planned",
+        "cost": "",
+        "booking": "",
+        "notes": "A gentle morning before the west-coast drive."
+      },
+      {
+        "id": "item-porto-limnionas",
+        "type": "Activity",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Porto Limnionas swim",
+        "locationId": "porto-limnionas",
+        "status": "Suggested",
+        "cost": "",
+        "booking": "",
+        "notes": "Bring water shoes and check whether a lunch spot fits nearby."
+      },
+      {
+        "id": "item-sunset-viewpoint",
+        "type": "Activity",
+        "period": "Evening",
+        "time": "",
+        "title": "Sunset viewpoint or terrace",
+        "locationId": "navagio-viewpoint",
+        "status": "Discussing",
+        "cost": "",
+        "booking": "",
+        "notes": "Confirm current access and safety before relying on the viewpoint."
+      }
+    ]
   },
   {
     "id": "day-5",
     "label": "Day 5",
-    "date": "Editable date",
-    "focus": "Flexible favorites day.",
-    "morning": {
-      "title": "Repeat favorite",
-      "plan": "Return to the place we liked most, or keep this as a rest morning."
-    },
-    "afternoon": {
-      "title": "Village drive",
-      "plan": "Add villages, shops, or olive-oil stops after research.",
-      "locationIds": ["anafonitria"]
-    },
-    "evening": {
-      "title": "Booked dinner",
-      "plan": "Use this slot for a reservation once chosen."
-    }
+    "date": "Favorites day",
+    "isoDate": "2026-09-05",
+    "destination": "Flexible",
+    "focus": "Return to what we love or keep a restful day.",
+    "mood": "Flexible favorites",
+    "balance": "Relaxed",
+    "balanceReason": "Built as a backup and repeat-favorite day.",
+    "items": [
+      {
+        "id": "item-repeat-favorite",
+        "type": "Free time",
+        "period": "Morning",
+        "time": "",
+        "title": "Repeat favorite or rest morning",
+        "locationId": "hotel",
+        "status": "Idea",
+        "cost": "",
+        "booking": "",
+        "notes": "Use saved places and mood from the first days."
+      },
+      {
+        "id": "item-village-drive",
+        "type": "Activity",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Village drive candidate",
+        "locationId": "anafonitria",
+        "status": "Suggested",
+        "cost": "",
+        "booking": "",
+        "notes": "Add villages, shops, or olive-oil stops after research."
+      },
+      {
+        "id": "item-romantic-dinner",
+        "type": "Meal",
+        "period": "Evening",
+        "time": "",
+        "title": "Romantic dinner reservation",
+        "locationId": "bochali",
+        "status": "Needs attention",
+        "cost": "",
+        "booking": "Restaurant not chosen",
+        "notes": "Pick one dinner worth booking in advance."
+      }
+    ]
   },
   {
     "id": "day-6",
     "label": "Day 6",
+    "date": "Town and backup day",
+    "isoDate": "2026-09-06",
+    "destination": "Zakynthos Town",
+    "focus": "Cafes, shops, harbor walk, and rainy-day flexibility.",
+    "mood": "Easy town day",
+    "balance": "Balanced",
+    "balanceReason": "Useful as a lighter day or rainy-day swap.",
+    "items": [
+      {
+        "id": "item-town-cafes",
+        "type": "Activity",
+        "period": "Morning",
+        "time": "",
+        "title": "Zakynthos Town cafes and shops",
+        "locationId": "zakynthos-town",
+        "status": "Suggested",
+        "cost": "",
+        "booking": "",
+        "notes": "Good backup if weather is less beach-friendly."
+      },
+      {
+        "id": "item-harbor-walk",
+        "type": "Activity",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Harbor walk or small museum",
+        "locationId": "zakynthos-town",
+        "status": "Idea",
+        "cost": "",
+        "booking": "",
+        "notes": "Keep this unbooked unless a specific event appears."
+      },
+      {
+        "id": "item-town-dinner",
+        "type": "Meal",
+        "period": "Evening",
+        "time": "",
+        "title": "Dinner in town",
+        "locationId": "zakynthos-town",
+        "status": "Idea",
+        "cost": "",
+        "booking": "",
+        "notes": "Choose a backup place that works without a car-heavy evening."
+      }
+    ]
+  },
+  {
+    "id": "day-7",
+    "label": "Day 7",
+    "date": "Slow final full day",
+    "isoDate": "2026-09-07",
+    "destination": "Flexible",
+    "focus": "Keep space for beach, rest, and one favorite meal.",
+    "mood": "Slow travel",
+    "balance": "Relaxed",
+    "balanceReason": "A deliberately open day before departure.",
+    "items": [
+      {
+        "id": "item-last-beach",
+        "type": "Activity",
+        "period": "Morning",
+        "time": "",
+        "title": "Last beach swim",
+        "locationId": "gerakas",
+        "status": "Idea",
+        "cost": "",
+        "booking": "",
+        "notes": "Pick the beach based on weather, energy, and what we loved."
+      },
+      {
+        "id": "item-pack-lightly",
+        "type": "Task",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Pack lightly before dinner",
+        "locationId": "hotel",
+        "status": "Planned",
+        "cost": "",
+        "booking": "",
+        "notes": "Leave the final evening uncluttered."
+      },
+      {
+        "id": "item-last-dinner",
+        "type": "Meal",
+        "period": "Evening",
+        "time": "",
+        "title": "Final dinner",
+        "locationId": "bochali",
+        "status": "Discussing",
+        "cost": "",
+        "booking": "",
+        "notes": "A good candidate for the most romantic booked meal."
+      }
+    ]
+  },
+  {
+    "id": "day-8",
+    "label": "Day 8",
     "date": "Departure day",
+    "isoDate": "2026-09-08",
+    "destination": "Zakynthos airport",
     "focus": "Pack calmly and travel home.",
-    "morning": {
-      "title": "Pack and check out",
-      "plan": "Pack, settle hotel bill, and leave time for airport transfer.",
-      "locationIds": ["hotel"]
-    },
-    "afternoon": {
-      "title": "Airport",
-      "plan": "Add airport timing and return flight details."
-    },
-    "evening": {
-      "title": "Home",
-      "plan": "Add arrival notes and transport home."
-    }
+    "mood": "Clear and practical",
+    "balance": "Balanced",
+    "balanceReason": "Checkout, airport timing, and travel documents should be easy to find.",
+    "items": [
+      {
+        "id": "item-checkout",
+        "type": "Accommodation",
+        "period": "Morning",
+        "time": "",
+        "title": "Check out and settle stay",
+        "locationId": "hotel",
+        "status": "Needs attention",
+        "cost": "",
+        "booking": "Checkout time missing",
+        "notes": "Add exact checkout time and luggage plan."
+      },
+      {
+        "id": "item-airport-transfer-home",
+        "type": "Transport",
+        "period": "Afternoon",
+        "time": "",
+        "title": "Airport transfer",
+        "locationId": "zakynthos-airport",
+        "status": "Discussing",
+        "cost": "",
+        "booking": "",
+        "notes": "Add leave-by time once return flight is known."
+      },
+      {
+        "id": "item-return-flight",
+        "type": "Transport",
+        "period": "Evening",
+        "time": "",
+        "title": "Return flight home",
+        "locationId": "zakynthos-airport",
+        "status": "Needs attention",
+        "cost": "",
+        "booking": "Flight details missing",
+        "notes": "Add airline, flight number, terminal, and arrival notes."
+      }
+    ]
   }
 ]

@@ -1,9 +1,16 @@
 {
-  "title": "Zakynthos September Guide",
+  "title": "Zakynthos Together",
   "destination": "Zakynthos, Greece",
   "month": "September",
   "startDate": "2026-09-01",
   "endDate": "2026-09-08",
   "travelers": "Martin and Marta",
-  "subtitle": "A romantic, practical phone guide for planning and slow island days."
+  "members": [
+    { "name": "Martin", "role": "Owner" },
+    { "name": "Marta", "role": "Editor" }
+  ],
+  "mood": ["Romantic", "Relaxed", "Sea days", "Food-focused"],
+  "subtitle": "A calm shared travel cockpit for planning, choosing, booking, and enjoying slow island days.",
+  "coverImage": "./public/images/zakynthos-hero.png",
+  "coverAlt": "Turquoise Ionian Sea coastline with limestone cliffs at golden hour"
 }

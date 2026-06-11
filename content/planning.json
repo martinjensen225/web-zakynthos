@@ -1,34 +1,95 @@
 {
   "checklist": [
-    { "id": "book-flights", "text": "Book flights and add numbers/times", "status": "placeholder" },
-    { "id": "book-stay", "text": "Book hotel or apartment and add check-in details", "status": "placeholder" },
-    { "id": "transport", "text": "Decide rental car, taxi, or transfer plan", "status": "planned" },
-    { "id": "boat-trip", "text": "Choose boat-trip day after checking weather window", "status": "wishlist" },
-    { "id": "restaurants", "text": "Pick one romantic dinner reservation", "status": "wishlist" },
-    { "id": "insurance", "text": "Add travel insurance and emergency contacts", "status": "placeholder" }
+    { "id": "book-flights", "text": "Book flights and add numbers/times", "status": "Needs attention" },
+    { "id": "book-stay", "text": "Book hotel or apartment and add check-in details", "status": "Needs attention" },
+    { "id": "transport", "text": "Decide rental car, taxi, or transfer plan", "status": "Discussing" },
+    { "id": "boat-trip", "text": "Choose boat-trip day after checking weather window", "status": "Suggested" },
+    { "id": "restaurants", "text": "Pick one romantic dinner reservation", "status": "Discussing" },
+    { "id": "insurance", "text": "Add travel insurance and emergency contacts", "status": "Needs attention" }
+  ],
+  "decisions": [
+    {
+      "id": "decision-stay-area",
+      "title": "Choose stay area",
+      "type": "Choose one",
+      "status": "Needs vote",
+      "linkedItemId": "item-arrival-transfer",
+      "finalChoice": "",
+      "notes": "This affects dinners, transfer, and how much we drive.",
+      "options": [
+        { "id": "stay-town", "title": "Zakynthos Town or Bochali", "martin": "Like", "marta": "Pending", "notes": "Good for evenings and easy backup plans." },
+        { "id": "stay-vasilikos", "title": "Vasilikos beach area", "martin": "Fine", "marta": "Pending", "notes": "Better for slow beach days." },
+        { "id": "stay-west", "title": "West coast base", "martin": "Like", "marta": "Pending", "notes": "Beautiful sunsets, more driving." }
+      ]
+    },
+    {
+      "id": "decision-car",
+      "title": "Rental car or selected taxi days",
+      "type": "Yes/no",
+      "status": "Discussing",
+      "linkedItemId": "item-arrival-transfer",
+      "finalChoice": "",
+      "notes": "A car helps with coves and viewpoints, but parking and driving add effort.",
+      "options": [
+        { "id": "car-all-days", "title": "Rental car for all days", "martin": "Like", "marta": "Pending", "notes": "Most flexible." },
+        { "id": "car-selected", "title": "Rent only for west and north days", "martin": "Love", "marta": "Pending", "notes": "Good compromise." },
+        { "id": "taxi-transfer", "title": "Taxi/transfer only", "martin": "Fine", "marta": "Pending", "notes": "Least admin, less freedom." }
+      ]
+    },
+    {
+      "id": "decision-dinner",
+      "title": "Which dinner should be booked?",
+      "type": "Choose one",
+      "status": "Needs vote",
+      "linkedItemId": "item-romantic-dinner",
+      "finalChoice": "",
+      "notes": "Use one booked dinner as the romantic anchor of the trip.",
+      "options": [
+        { "id": "dinner-bochali", "title": "Bochali sunset dinner", "martin": "Like", "marta": "Pending", "notes": "View-focused." },
+        { "id": "dinner-seafood", "title": "Seafood by the water", "martin": "Love", "marta": "Pending", "notes": "Fits the island mood." },
+        { "id": "dinner-town", "title": "Town dinner and harbor walk", "martin": "Fine", "marta": "Pending", "notes": "Easy backup." }
+      ]
+    }
+  ],
+  "tasks": [
+    { "id": "task-passports", "title": "Check passports and travel cards", "assignee": "Martin and Marta", "dueDate": "2026-08-01", "priority": "High", "status": "To do", "linkedItemId": "", "notes": "Keep copies outside the phone wallet too." },
+    { "id": "task-hotel", "title": "Book stay and add address", "assignee": "Martin", "dueDate": "2026-07-15", "priority": "High", "status": "To do", "linkedItemId": "item-checkout", "notes": "Update stay details and map place after booking." },
+    { "id": "task-insurance", "title": "Add insurance and emergency contact", "assignee": "Marta", "dueDate": "2026-08-15", "priority": "Medium", "status": "To do", "linkedItemId": "doc-insurance", "notes": "Add policy number as a document record." }
   ],
   "packing": [
-    "Passports and travel documents",
-    "European health card / insurance info",
-    "Swimwear and beach towel",
-    "Water shoes for rocky coves",
-    "Light evening clothes",
-    "Sun protection and sunglasses",
-    "Chargers and power bank",
-    "Small day bag",
-    "Medication and basic first aid"
+    { "id": "pack-passports", "text": "Passports and travel documents", "owner": "Shared", "category": "Documents", "essential": true, "packed": false },
+    { "id": "pack-insurance", "text": "European health card / insurance info", "owner": "Shared", "category": "Documents", "essential": true, "packed": false },
+    { "id": "pack-swim", "text": "Swimwear and beach towel", "owner": "Both", "category": "Clothing", "essential": true, "packed": false },
+    { "id": "pack-water-shoes", "text": "Water shoes for rocky coves", "owner": "Both", "category": "Beach", "essential": true, "packed": false },
+    { "id": "pack-evening", "text": "Light evening clothes", "owner": "Both", "category": "Clothing", "essential": false, "packed": false },
+    { "id": "pack-sun", "text": "Sun protection and sunglasses", "owner": "Shared", "category": "Beach", "essential": true, "packed": false },
+    { "id": "pack-power", "text": "Chargers and power bank", "owner": "Shared", "category": "Electronics", "essential": true, "packed": false },
+    { "id": "pack-day-bag", "text": "Small day bag", "owner": "Shared", "category": "Daily", "essential": false, "packed": false },
+    { "id": "pack-medicine", "text": "Medication and basic first aid", "owner": "Shared", "category": "Health", "essential": true, "packed": false }
   ],
-  "budgetNotes": [
-    "Add flight total after booking.",
-    "Add stay total after booking.",
-    "Add daily food estimate.",
-    "Add boat trip and transport estimates.",
-    "Keep cash/card notes here."
+  "budget": {
+    "currency": "EUR",
+    "target": 1800,
+    "comfort": "Comfortable with a few treats",
+    "notes": "Replace placeholders with booked totals as decisions firm up.",
+    "expenses": [
+      { "id": "expense-flights", "title": "Flights", "amount": 0, "currency": "EUR", "category": "Transport", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Needs estimate", "linkedItemId": "item-outbound-flight", "notes": "Add total after booking." },
+      { "id": "expense-stay", "title": "Stay", "amount": 0, "currency": "EUR", "category": "Accommodation", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Needs estimate", "linkedItemId": "item-checkout", "notes": "Add hotel or apartment total." },
+      { "id": "expense-food", "title": "Food estimate", "amount": 560, "currency": "EUR", "category": "Food", "paidBy": "Shared", "splitBetween": "Martin and Marta", "status": "Estimate", "linkedItemId": "item-romantic-dinner", "notes": "Placeholder for casual meals and one booked dinner." },
+      { "id": "expense-boat", "title": "Boat trip estimate", "amount": 160, "currency": "EUR", "category": "Activity", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Estimate", "linkedItemId": "item-blue-caves", "notes": "Confirm once operator is chosen." },
+      { "id": "expense-car", "title": "Transport or rental car", "amount": 220, "currency": "EUR", "category": "Transport", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Estimate", "linkedItemId": "decision-car", "notes": "Depends on rental car decision." }
+    ]
+  },
+  "documents": [
+    { "id": "doc-flight-out", "title": "Outbound flight confirmation", "type": "Flight confirmation", "status": "Missing", "linkedItemId": "item-outbound-flight", "important": true, "offline": false, "reference": "", "notes": "File upload is not enabled yet; add manual booking details here." },
+    { "id": "doc-stay", "title": "Hotel booking", "type": "Hotel booking", "status": "Missing", "linkedItemId": "item-checkout", "important": true, "offline": false, "reference": "", "notes": "Add booking reference after hotel is chosen." },
+    { "id": "doc-insurance", "title": "Travel insurance", "type": "Insurance", "status": "Missing", "linkedItemId": "task-insurance", "important": true, "offline": false, "reference": "", "notes": "Add policy number and emergency contact." },
+    { "id": "doc-boat", "title": "Boat trip ticket", "type": "Event ticket", "status": "Not needed yet", "linkedItemId": "item-blue-caves", "important": false, "offline": false, "reference": "", "notes": "Add after booking." }
   ],
   "openQuestions": [
-    "Which area should we stay in?",
-    "Do we want a rental car for all days or only selected days?",
-    "Which day should be the boat trip weather window?",
-    "Which dinner should be booked in advance?"
+    { "id": "question-stay", "title": "Which area should we stay in?", "status": "Needs attention", "linkedDecisionId": "decision-stay-area" },
+    { "id": "question-car", "title": "Do we want a rental car for all days or selected days?", "status": "Discussing", "linkedDecisionId": "decision-car" },
+    { "id": "question-boat", "title": "Which day should be the boat trip weather window?", "status": "Needs attention", "linkedDecisionId": "" },
+    { "id": "question-dinner", "title": "Which dinner should be booked in advance?", "status": "Needs vote", "linkedDecisionId": "decision-dinner" }
   ]
 }

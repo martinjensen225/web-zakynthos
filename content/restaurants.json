@@ -3,27 +3,33 @@
     "id": "food-stay-area",
     "name": "First-night place near hotel",
     "area": "Add stay area",
-    "status": "placeholder",
+    "status": "Needs attention",
     "cuisine": "Greek / easy dinner",
     "notes": "Pick after hotel is confirmed. Prioritize walkable, simple, and open late.",
-    "locationId": "hotel"
+    "locationId": "hotel",
+    "price": "EUR",
+    "votes": "Both pending"
   },
   {
     "id": "food-sunset-dinner",
     "name": "Sunset dinner wishlist",
     "area": "West coast or Bochali",
-    "status": "wishlist",
+    "status": "Discussing",
     "cuisine": "Greek seafood or mezze",
     "notes": "Find one romantic reservation candidate with a view.",
-    "locationId": "bochali"
+    "locationId": "bochali",
+    "price": "EUR EUR",
+    "votes": "Martin: like, Marta: pending"
   },
   {
     "id": "food-town",
     "name": "Zakynthos Town dinner option",
     "area": "Zakynthos Town",
-    "status": "wishlist",
+    "status": "Suggested",
     "cuisine": "Flexible",
     "notes": "Good backup for shopping, cafes, and a harbor walk.",
-    "locationId": "zakynthos-town"
+    "locationId": "zakynthos-town",
+    "price": "EUR",
+    "votes": "Both pending"
   }
 ]

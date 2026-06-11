@@ -1,4 +1,8 @@
 {
+  "wallet": [
+    "Today timeline, stay address, key booking references, and emergency contacts should be checked before departure.",
+    "File upload and offline document storage are future features; keep real files in a secure phone wallet until R2 or Azure Blob storage is added."
+  ],
   "emergency": [
     "Emergency number: add local emergency details before departure.",
     "Hotel contact: add phone and address after booking.",
