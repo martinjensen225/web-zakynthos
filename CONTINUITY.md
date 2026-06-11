@@ -2,7 +2,7 @@
 
 ## Snapshot (≤ 25 lines)
 - Goal: Convert the Zakynthos guide into a shared editable trip-planning web app. (2026-06-10) [USER]
-- Now: Structured website editing and refreshed trip dashboard UI are staged in the working tree. (2026-06-11) [CODE]
+- Now: Inline card editing, drag/drop ordering, optional card images, and refreshed dashboard UI are staged in the working tree. (2026-06-11) [CODE]
 - Next: Configure Cloudflare runtime secrets/bindings if not already done, then push `main` to deploy Pages automatically. (2026-06-11) [CODE]
 - Open Questions: Cloudflare account/project secret values, editor users, and public-read setting are UNCONFIRMED. (2026-06-11) [USER]
 
@@ -21,6 +21,7 @@
 - 2026-06-10 [CODE] Added a GitHub Actions deploy job that builds `dist/` and deploys the existing Pages project with `cloudflare/wrangler-action@v3`.
 - 2026-06-10 [CODE] Documented push-based Pages deployment, required GitHub secrets, Pages-only verification, and why the workflow does not create a Worker.
 - 2026-06-11 [CODE] Replaced raw JSON-first editing with structured add/update/remove controls, refreshed dashboard styling, tightened section/full-trip validation, and documented website editing.
+- 2026-06-11 [CODE] Replaced under-page editor panels with inline editing on the visible cards, including add/delete/move/drag controls and optional image fields.
 
 ## Working set (≤ 12 paths)
 - README.md
@@ -54,3 +55,4 @@
 - 2026-06-10T15:45+02:00 [TOOL] Workflow command scan confirmed `.github/workflows/build.yml` uses `pages deploy dist --project-name web-zakynthos --branch main`.
 - 2026-06-10T15:45+02:00 [TOOL] Offline workflow YAML parser was unavailable locally (`ruby`, PyYAML, `powershell-yaml`, and `actionlint` missing).
 - 2026-06-11T08:59+02:00 [TOOL] `npm run lint`, `npm run test`, `npm run build`, and `git diff --check` passed after structured editing update; diff check only reported CRLF normalization warnings.
+- 2026-06-11T09:16+02:00 [TOOL] `npm run lint`, `node --check assets/app.js`, `npm run test`, `npm run build`, and `git diff --check` passed after inline card editing update; diff check only reported CRLF normalization warnings.

@@ -296,6 +296,25 @@ main {
   box-shadow: var(--shadow);
 }
 
+.card[draggable="true"],
+.editor-row[draggable="true"],
+.editable-quick-link[draggable="true"] {
+  cursor: grab;
+}
+
+.dragging {
+  opacity: 0.55;
+}
+
+.card-media {
+  width: calc(100% + 2rem);
+  max-height: 15rem;
+  margin: -1rem -1rem 1rem;
+  border-radius: 8px 8px 0 0;
+  object-fit: cover;
+  background: var(--aqua);
+}
+
 .accent-card {
   background: linear-gradient(135deg, #ffffff 0%, #eef8f6 58%, #fff5df 100%);
 }
@@ -549,8 +568,7 @@ main {
 
 .auth-panel input,
 .inline-form input,
-.inline-form select,
-.editor-card textarea {
+.inline-form select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -574,49 +592,64 @@ main {
   flex: 1 1 18rem;
 }
 
-.editor-card textarea {
-  padding: 0.85rem;
-  line-height: 1.45;
-  resize: vertical;
-}
-
-.structured-editor {
-  display: grid;
-  gap: 1rem;
-}
-
-.editor-group {
-  display: grid;
+.edit-toolbar {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  padding: 0.9rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 1rem;
+  padding: 0.75rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fffdf8;
 }
 
-.editor-group.nested {
-  background: white;
+.hero .edit-toolbar {
+  color: var(--ink);
+  background: rgba(255, 253, 248, 0.94);
 }
 
-.editor-group h3 {
+.edit-toolbar p {
+  display: grid;
+  gap: 0.15rem;
   margin: 0;
-  font-size: 1rem;
 }
 
-.editor-field {
+.edit-toolbar span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.inline-edit-form,
+.hero-editor {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hero-editor {
+  max-width: 44rem;
+  padding: 1rem;
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgba(255, 253, 248, 0.94);
+}
+
+.edit-field {
   display: grid;
   gap: 0.4rem;
   color: var(--sea-dark);
   font-weight: 800;
 }
 
-.editor-field span {
+.edit-field span {
   font-size: 0.88rem;
 }
 
-.editor-field input,
-.editor-field textarea,
-.editor-field select {
+.edit-field input,
+.edit-field textarea,
+.edit-field select {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--line);
@@ -625,6 +658,43 @@ main {
   color: var(--ink);
   background: white;
   font-weight: 500;
+}
+
+.edit-field textarea {
+  resize: vertical;
+}
+
+.inline-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.button.danger {
+  background: #fff1ed;
+  color: #80331f;
+  border-color: #e4b7aa;
+}
+
+.drag-handle {
+  font-weight: 900;
+}
+
+.editable-list {
+  min-height: 2rem;
+}
+
+.editable-quick-link {
+  display: grid;
+  gap: 0.75rem;
+  min-height: auto;
+  align-items: stretch;
+}
+
+.editable-block {
+  display: grid;
+  gap: 0.65rem;
 }
 
 .checkbox-field {
@@ -650,51 +720,6 @@ main {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.6rem;
   align-items: end;
-}
-
-.object-editor-item {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: white;
-}
-
-.object-editor-item summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  cursor: pointer;
-  font-weight: 850;
-  color: var(--sea-dark);
-}
-
-.object-editor-item[open] summary {
-  border-bottom: 1px solid var(--line);
-}
-
-.object-editor-item > .editor-field,
-.object-editor-item > .editor-group {
-  margin: 0.75rem;
-}
-
-.json-fallback {
-  margin-top: 1rem;
-  border-top: 1px solid var(--line);
-  padding-top: 0.85rem;
-}
-
-.json-fallback summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.json-fallback textarea {
-  min-height: 14rem;
-  margin-top: 0.75rem;
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-  font-size: 0.9rem;
 }
 
 .icon-button.danger {

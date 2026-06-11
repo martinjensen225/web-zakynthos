@@ -22,35 +22,13 @@ const nav = [
   ['planning.html', 'Plan'],
   ['guide.html', 'Guide']
 ];
-const pageSections = {
-  home: ['meta', 'highlights', 'quickLinks'],
-  itinerary: ['itinerary'],
-  attractions: ['attractions', 'locations'],
-  stay: ['stay', 'flights', 'locations'],
-  food: ['restaurants', 'locations'],
-  map: ['locations'],
-  planning: ['planning'],
-  guide: ['duringTrip']
-};
-const sectionLabels = {
-  meta: 'Trip summary',
-  highlights: 'Trip highlights',
-  quickLinks: 'Quick links',
-  flights: 'Flights',
-  stay: 'Stay details',
-  locations: 'Map places',
-  itinerary: 'Daily itinerary',
-  attractions: 'Explore ideas',
-  restaurants: 'Restaurants',
-  planning: 'Planning lists',
-  duringTrip: 'During-trip guide'
-};
 const draftPrefix = 'zakynthos:draft:';
 let trip;
 let session;
 let editMode = false;
 let dirtyDrafts = new Set();
 let sectionDrafts = new Map();
+let draggedItem = null;
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -71,7 +49,7 @@ function slug(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 40) || 'new-item';
+    .slice(0, 44) || 'new-item';
 }
 
 function uniqueId(prefix, items) {
@@ -98,6 +76,10 @@ function getSectionDraft(sectionKey) {
   const draft = saved ? JSON.parse(saved) : clone(trip[sectionKey]);
   sectionDrafts.set(sectionKey, draft);
   return draft;
+}
+
+function sectionValue(sectionKey) {
+  return editMode && session.authenticated ? getSectionDraft(sectionKey) : trip[sectionKey];
 }
 
 function saveDraft(sectionKey) {
@@ -141,12 +123,21 @@ function removeAtPath(root, path) {
   }
 }
 
+function moveArrayItem(items, fromIndex, toIndex) {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= items.length || toIndex >= items.length) {
+    return;
+  }
+  const [item] = items.splice(fromIndex, 1);
+  items.splice(toIndex, 0, item);
+}
+
 function noteByTarget(targetId) {
   return trip.notes.find((note) => note.targetId === targetId);
 }
 
 function locationById(id) {
-  return trip.locations.find((location) => location.id === id);
+  const locations = editMode && sectionDrafts.has('locations') ? getSectionDraft('locations') : trip.locations;
+  return locations.find((location) => location.id === id);
 }
 
 function mapsUrl(location) {
@@ -160,9 +151,9 @@ function formatDate(value) {
     : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function tripLength() {
-  const start = new Date(`${trip.meta.startDate}T00:00:00`);
-  const end = new Date(`${trip.meta.endDate}T00:00:00`);
+function tripLength(meta = trip.meta) {
+  const start = new Date(`${meta.startDate}T00:00:00`);
+  const end = new Date(`${meta.endDate}T00:00:00`);
   if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) {
     return 'Dates pending';
   }
@@ -186,12 +177,13 @@ function favoriteTargets() {
   return new Set(trip.favorites.map((favorite) => favorite.targetId));
 }
 
-function card({ id, title, meta = '', favorite = false, body = '', tone = '' }) {
+function card({ id, title, meta = '', favorite = false, body = '', tone = '', image = '', editAttrs = '' }) {
   return `
-    <article class="card ${tone}" data-card-id="${escapeHtml(id)}">
+    <article class="card ${tone}" data-card-id="${escapeHtml(id)}" ${editAttrs}>
+      ${image ? `<img class="card-media" src="${escapeHtml(image)}" alt="">` : ''}
       <div class="card-title-row">
         <div>${meta ? `<p class="card-meta">${escapeHtml(meta)}</p>` : ''}<h2>${escapeHtml(title)}</h2></div>
-        ${favorite ? `<button class="icon-button favorite-button" type="button" data-favorite-id="${escapeHtml(id)}" aria-pressed="${favoriteTargets().has(id)}" aria-label="Save ${escapeHtml(title)} as favorite"><span aria-hidden="true">*</span></button>` : ''}
+        ${favorite && !editMode ? `<button class="icon-button favorite-button" type="button" data-favorite-id="${escapeHtml(id)}" aria-pressed="${favoriteTargets().has(id)}" aria-label="Save ${escapeHtml(title)} as favorite"><span aria-hidden="true">*</span></button>` : ''}
       </div>
       ${body}
     </article>
@@ -219,6 +211,64 @@ function statusPill(status) {
 
 function list(items, className = 'plain-list') {
   return `<ul class="${className}">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+}
+
+function editField(sectionKey, path, label, value, options = {}) {
+  const type = options.type ?? 'text';
+  const pathJson = pathAttr(path);
+  if (type === 'checkbox') {
+    return `<label class="edit-field checkbox-field"><input type="checkbox" data-inline-section="${sectionKey}" data-inline-path="${pathJson}" data-inline-type="boolean" ${value ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`;
+  }
+  if (type === 'textarea') {
+    return `<label class="edit-field"><span>${escapeHtml(label)}</span><textarea data-inline-section="${sectionKey}" data-inline-path="${pathJson}" rows="${options.rows ?? 3}" ${options.required ? 'required' : ''}>${escapeHtml(value)}</textarea></label>`;
+  }
+  if (type === 'csv') {
+    return `<label class="edit-field"><span>${escapeHtml(label)}</span><input data-inline-section="${sectionKey}" data-inline-path="${pathJson}" data-inline-type="csv" value="${escapeHtml((value ?? []).join(', '))}"></label>`;
+  }
+  return `<label class="edit-field"><span>${escapeHtml(label)}</span><input type="${type}" data-inline-section="${sectionKey}" data-inline-path="${pathJson}" value="${escapeHtml(value)}" ${options.required ? 'required' : ''}></label>`;
+}
+
+function editSelect(sectionKey, path, label, value, choices) {
+  return `
+    <label class="edit-field">
+      <span>${escapeHtml(label)}</span>
+      <select data-inline-section="${sectionKey}" data-inline-path="${pathAttr(path)}">
+        ${choices.map((choice) => `<option value="${escapeHtml(choice)}" ${choice === value ? 'selected' : ''}>${escapeHtml(choice)}</option>`).join('')}
+      </select>
+    </label>
+  `;
+}
+
+function editActions(sectionKey, path, index, total) {
+  return `
+    <div class="inline-edit-actions">
+      <button class="icon-button small drag-handle" type="button" aria-label="Drag to reorder">::</button>
+      <button class="button compact ghost" type="button" data-move-section="${sectionKey}" data-move-path="${pathAttr(path)}" data-move-index="${index}" data-move-direction="-1" ${index === 0 ? 'disabled' : ''}>Up</button>
+      <button class="button compact ghost" type="button" data-move-section="${sectionKey}" data-move-path="${pathAttr(path)}" data-move-index="${index}" data-move-direction="1" ${index === total - 1 ? 'disabled' : ''}>Down</button>
+      <button class="button compact danger" type="button" data-remove-section="${sectionKey}" data-remove-path="${pathAttr([...path, index])}">Delete</button>
+    </div>
+  `;
+}
+
+function editableItemAttrs(sectionKey, path, index) {
+  return `draggable="true" data-reorder-section="${sectionKey}" data-reorder-path="${pathAttr(path)}" data-reorder-index="${index}"`;
+}
+
+function sectionToolbar(sectionKey, label, addKind = '') {
+  if (!editMode || !session.authenticated) {
+    return '';
+  }
+  const restored = window.localStorage.getItem(draftKey(sectionKey)) ? 'Unsaved draft on this device.' : '';
+  return `
+    <div class="edit-toolbar" data-section-toolbar="${sectionKey}">
+      <p><strong>${escapeHtml(label)}</strong><span data-section-status>${restored}</span></p>
+      <div class="editor-actions">
+        ${addKind ? `<button class="button compact secondary" type="button" data-add-section="${sectionKey}" data-add-kind="${addKind}">Add</button>` : ''}
+        <button class="button compact" type="button" data-save-section="${sectionKey}">Save</button>
+        <button class="button compact ghost" type="button" data-reset-section="${sectionKey}">Reset</button>
+      </div>
+    </div>
+  `;
 }
 
 function editorBar() {
@@ -274,44 +324,59 @@ function pageTitle() {
 }
 
 function renderHome() {
-  const target = new Date(`${trip.meta.startDate}T00:00:00`);
-  const targetLabel = Number.isNaN(target.valueOf()) ? 'Dates pending' : formatDate(trip.meta.startDate);
+  const meta = sectionValue('meta');
+  const highlights = sectionValue('highlights');
+  const quickLinks = sectionValue('quickLinks');
   const firstDay = trip.itinerary[0];
-  const favoriteCount = trip.favorites.length;
+  const targetLabel = formatDate(meta.startDate);
 
   main.innerHTML = `
     ${editorBar()}
     <section class="hero">
       <img src="./public/images/zakynthos-hero.png" alt="Turquoise Ionian Sea coastline with limestone cliffs at golden hour">
       <div class="hero-content">
-        <p class="eyebrow">${escapeHtml(trip.meta.month)} · ${escapeHtml(trip.meta.destination)}</p>
-        <h1>${escapeHtml(trip.meta.title)}</h1>
-        <p>${escapeHtml(trip.meta.subtitle)}</p>
-        <div class="hero-actions">
-          <a class="button primary" href="./planning.html">Open planning board</a>
-          <a class="button secondary" href="./guide.html">Phone guide</a>
-        </div>
+        ${editMode && session.authenticated ? `
+          ${sectionToolbar('meta', 'Trip summary')}
+          <div class="inline-edit-form hero-editor">
+            ${editField('meta', ['month'], 'Month', meta.month)}
+            ${editField('meta', ['destination'], 'Destination', meta.destination)}
+            ${editField('meta', ['title'], 'Title', meta.title)}
+            ${editField('meta', ['subtitle'], 'Description', meta.subtitle, { type: 'textarea', rows: 2 })}
+            ${editField('meta', ['startDate'], 'Start date', meta.startDate, { type: 'date' })}
+            ${editField('meta', ['endDate'], 'End date', meta.endDate, { type: 'date' })}
+            ${editField('meta', ['travelers'], 'Travelers', meta.travelers)}
+          </div>
+        ` : `
+          <p class="eyebrow">${escapeHtml(meta.month)} · ${escapeHtml(meta.destination)}</p>
+          <h1>${escapeHtml(meta.title)}</h1>
+          <p>${escapeHtml(meta.subtitle)}</p>
+          <div class="hero-actions">
+            <a class="button primary" href="./planning.html">Open planning board</a>
+            <a class="button secondary" href="./guide.html">Phone guide</a>
+          </div>
+        `}
       </div>
     </section>
     <section class="dashboard-strip" aria-label="Trip snapshot">
       ${statCard('Start', targetLabel)}
-      ${statCard('Length', tripLength())}
-      ${statCard('Travelers', trip.meta.travelers)}
-      ${statCard('Saved', `${favoriteCount} places`)}
+      ${statCard('Length', tripLength(meta))}
+      ${statCard('Travelers', meta.travelers)}
+      ${statCard('Saved', `${trip.favorites.length} places`)}
     </section>
     <section class="content-grid two">
-      ${card({ id: 'countdown', title: 'Countdown', meta: targetLabel, tone: 'accent-card', body: `<p class="countdown" data-countdown-start="${escapeHtml(trip.meta.startDate)}">Calculating...</p><p>${escapeHtml(trip.meta.travelers)}</p>` })}
+      ${card({ id: 'countdown', title: 'Countdown', meta: targetLabel, tone: 'accent-card', body: `<p class="countdown" data-countdown-start="${escapeHtml(meta.startDate)}">Calculating...</p><p>${escapeHtml(meta.travelers)}</p>` })}
       ${card({ id: 'today-plan', title: firstDay ? `${firstDay.label}: ${firstDay.focus}` : 'First plan', meta: firstDay?.date ?? 'Add itinerary', body: firstDay ? `<p>${escapeHtml(firstDay.morning.plan)}</p><a class="text-link" href="./itinerary.html">See itinerary</a>` : '<p>Add the first day in edit mode.</p>' })}
     </section>
     <section class="section">
       <div class="section-heading"><p class="eyebrow">Quick access</p><h2>Most useful while planning</h2></div>
-      <div class="quick-link-grid">${trip.quickLinks.map((link) => `<a class="quick-link" href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}</div>
+      ${sectionToolbar('quickLinks', 'Quick links', 'quickLink')}
+      <div class="quick-link-grid editable-list">${quickLinks.map((link, index) => editMode && session.authenticated ? editableQuickLink(link, index, quickLinks.length) : `<a class="quick-link" href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}</div>
     </section>
     <section class="section">
       <div class="section-heading"><p class="eyebrow">Highlights</p><h2>What this trip is about</h2></div>
-      <div class="content-grid two">${trip.highlights.map((highlight, index) => card({ id: `highlight-${index}`, title: highlight, favorite: index < 2, body: '<p>Use edit mode to tune the trip priorities as plans firm up.</p>' })).join('')}</div>
+      ${sectionToolbar('highlights', 'Highlights', 'highlight')}
+      <div class="content-grid two editable-list">${highlights.map((highlight, index) => editMode && session.authenticated ? editableHighlight(highlight, index, highlights.length) : card({ id: `highlight-${index}`, title: highlight, favorite: index < 2, body: '<p>Use edit mode to tune the trip priorities as plans firm up.</p>' })).join('')}</div>
     </section>
-    ${editPanels()}
   `;
 }
 
@@ -319,111 +384,288 @@ function statCard(label, value) {
   return `<article class="stat-card"><p>${escapeHtml(label)}</p><strong>${escapeHtml(value)}</strong></article>`;
 }
 
+function editableHighlight(highlight, index, total) {
+  return card({
+    id: `highlight-${index}`,
+    title: 'Highlight',
+    body: `<div class="inline-edit-form">${editField('highlights', [index], 'Text', highlight, { type: 'textarea', rows: 2 })}${editActions('highlights', [], index, total)}</div>`,
+    editAttrs: editableItemAttrs('highlights', [], index)
+  });
+}
+
+function editableQuickLink(link, index, total) {
+  return `
+    <article class="quick-link editable-quick-link" ${editableItemAttrs('quickLinks', [], index)}>
+      ${editField('quickLinks', [index, 'label'], 'Label', link.label)}
+      ${editField('quickLinks', [index, 'href'], 'Link', link.href)}
+      ${editActions('quickLinks', [], index, total)}
+    </article>
+  `;
+}
+
 function renderItinerary() {
+  const itinerary = sectionValue('itinerary');
   main.innerHTML = `
     ${editorBar()}
     ${pageHeader('Daily rhythm', 'Itinerary', 'Morning, afternoon, and evening plans with printable days and editable placeholders.')}
     <div class="toolbar print-hidden"><button class="button secondary" type="button" data-print>Print itinerary</button></div>
-    <section class="timeline">
-      ${trip.itinerary.map((day) => card({
-        id: day.id,
-        title: `${day.label}: ${day.focus}`,
-        meta: day.date,
-        favorite: true,
-        body: `
-          <div class="day-grid">${['morning', 'afternoon', 'evening'].map((period) => {
-            const block = day[period];
-            return `<section class="time-block"><p class="card-meta">${period}</p><h3>${escapeHtml(block.title)}</h3><p>${escapeHtml(block.plan)}</p>${block.notes ? `<p class="muted">${escapeHtml(block.notes)}</p>` : ''}<div class="inline-links">${(block.locationIds ?? []).map((id) => mapLink(locationById(id), true)).join('')}</div></section>`;
-          }).join('')}</div>
-          ${noteBox(`note-${day.id}`, 'Day notes')}
-        `
-      })).join('')}
+    ${sectionToolbar('itinerary', 'Itinerary days', 'day')}
+    <section class="timeline editable-list">
+      ${itinerary.map((day, index) => editMode && session.authenticated ? editableDay(day, index, itinerary.length) : itineraryCard(day)).join('')}
     </section>
-    ${editPanels()}
   `;
+}
+
+function itineraryCard(day) {
+  return card({
+    id: day.id,
+    title: `${day.label}: ${day.focus}`,
+    meta: day.date,
+    favorite: true,
+    body: `
+      <div class="day-grid">${['morning', 'afternoon', 'evening'].map((period) => {
+        const block = day[period];
+        return `<section class="time-block"><p class="card-meta">${period}</p><h3>${escapeHtml(block.title)}</h3><p>${escapeHtml(block.plan)}</p>${block.notes ? `<p class="muted">${escapeHtml(block.notes)}</p>` : ''}<div class="inline-links">${(block.locationIds ?? []).map((id) => mapLink(locationById(id), true)).join('')}</div></section>`;
+      }).join('')}</div>
+      ${noteBox(`note-${day.id}`, 'Day notes')}
+    `
+  });
+}
+
+function editableDay(day, index, total) {
+  return card({
+    id: day.id,
+    title: day.label,
+    meta: day.date,
+    body: `
+      <div class="inline-edit-form">
+        ${editField('itinerary', [index, 'label'], 'Label', day.label)}
+        ${editField('itinerary', [index, 'date'], 'Date', day.date)}
+        ${editField('itinerary', [index, 'focus'], 'Focus', day.focus, { type: 'textarea', rows: 2 })}
+        <div class="day-grid">${['morning', 'afternoon', 'evening'].map((period) => {
+          const block = day[period];
+          return `<section class="time-block editable-block"><h3>${period}</h3>${editField('itinerary', [index, period, 'title'], 'Title', block.title)}${editField('itinerary', [index, period, 'plan'], 'Plan', block.plan, { type: 'textarea' })}${editField('itinerary', [index, period, 'notes'], 'Notes', block.notes ?? '', { type: 'textarea', rows: 2 })}${editField('itinerary', [index, period, 'locationIds'], 'Location ids', block.locationIds ?? [], { type: 'csv' })}</section>`;
+        }).join('')}</div>
+        ${editActions('itinerary', [], index, total)}
+      </div>
+    `,
+    editAttrs: editableItemAttrs('itinerary', [], index)
+  });
 }
 
 function renderAttractions() {
-  const categories = [...new Set(trip.attractions.map((attraction) => attraction.category))];
+  const attractions = sectionValue('attractions');
+  const categories = [...new Set(attractions.map((attraction) => attraction.category))];
   main.innerHTML = `
     ${editorBar()}
     ${pageHeader('Explore', 'Attractions', 'Beaches, viewpoints, boat trips, villages, and rainy-day backups.')}
+    ${sectionToolbar('attractions', 'Attraction cards', 'attraction')}
     ${categories.map((category) => `
       <section class="section">
         <div class="section-heading"><p class="eyebrow">${escapeHtml(category)}</p><h2>${escapeHtml(category)} ideas</h2></div>
-        <div class="content-grid two">${trip.attractions.filter((attraction) => attraction.category === category).map((attraction) => card({
-          id: attraction.id,
-          title: attraction.name,
-          meta: attraction.area,
-          favorite: true,
-          body: `<p>${escapeHtml(attraction.summary)}</p><p class="muted"><strong>Best for:</strong> ${escapeHtml(attraction.bestFor)}</p>${attraction.mustDo ? '<span class="status-pill status-confirmed">must do</span>' : ''}${mapLink(locationById(attraction.locationId))}`
-        })).join('')}</div>
+        <div class="content-grid two editable-list">${attractions.map((attraction, index) => attraction.category === category ? (editMode && session.authenticated ? editableAttraction(attraction, index, attractions.length) : attractionCard(attraction)) : '').join('')}</div>
       </section>
     `).join('')}
-    ${editPanels()}
   `;
 }
 
+function attractionCard(attraction) {
+  return card({
+    id: attraction.id,
+    title: attraction.name,
+    meta: attraction.area,
+    favorite: true,
+    image: attraction.image,
+    body: `<p>${escapeHtml(attraction.summary)}</p><p class="muted"><strong>Best for:</strong> ${escapeHtml(attraction.bestFor)}</p>${attraction.mustDo ? '<span class="status-pill status-confirmed">must do</span>' : ''}${mapLink(locationById(attraction.locationId))}`
+  });
+}
+
+function editableAttraction(attraction, index, total) {
+  return card({
+    id: attraction.id,
+    title: attraction.name,
+    meta: attraction.area,
+    image: attraction.image,
+    body: `
+      <div class="inline-edit-form">
+        ${editField('attractions', [index, 'name'], 'Title', attraction.name)}
+        ${editField('attractions', [index, 'area'], 'Area', attraction.area)}
+        ${editField('attractions', [index, 'category'], 'Category', attraction.category)}
+        ${editField('attractions', [index, 'summary'], 'Description', attraction.summary, { type: 'textarea' })}
+        ${editField('attractions', [index, 'bestFor'], 'Best for', attraction.bestFor, { type: 'textarea', rows: 2 })}
+        ${editField('attractions', [index, 'locationId'], 'Map place id', attraction.locationId ?? '')}
+        ${editField('attractions', [index, 'image'], 'Image URL or path', attraction.image ?? '')}
+        ${editField('attractions', [index, 'mustDo'], 'Must do', attraction.mustDo ?? false, { type: 'checkbox' })}
+        ${editActions('attractions', [], index, total)}
+      </div>
+    `,
+    editAttrs: editableItemAttrs('attractions', [], index)
+  });
+}
+
 function renderStay() {
-  const stayLocation = locationById(trip.stay.locationId);
+  const stay = sectionValue('stay');
+  const flights = sectionValue('flights');
+  const stayLocation = locationById(stay.locationId);
   main.innerHTML = `
     ${editorBar()}
     ${pageHeader('Base camp', 'Hotel and stay', 'Keep booking details, flight notes, and arrival logistics in one protected place.')}
     <section class="content-grid two">
-      ${card({ id: 'stay-main', title: trip.stay.name, meta: trip.stay.address, favorite: true, tone: 'accent-card', body: `<dl class="details-list"><div><dt>Check-in</dt><dd>${escapeHtml(trip.stay.checkIn)}</dd></div><div><dt>Check-out</dt><dd>${escapeHtml(trip.stay.checkOut)}</dd></div><div><dt>Contact</dt><dd>${escapeHtml(trip.stay.contact)}</dd></div><div><dt>Booking ref</dt><dd>${escapeHtml(trip.stay.bookingReference)}</dd></div></dl>${mapLink(stayLocation)}` })}
-      ${card({ id: 'flight-details', title: 'Flights', meta: 'Travel details', body: `<h3>Outbound</h3><p>${escapeHtml(trip.flights.outbound)}</p><h3>Return</h3><p>${escapeHtml(trip.flights.return)}</p>${list(trip.flights.notes)}` })}
+      ${editMode && session.authenticated ? editableStay(stay) : card({ id: 'stay-main', title: stay.name, meta: stay.address, favorite: true, tone: 'accent-card', image: stay.image, body: `<dl class="details-list"><div><dt>Check-in</dt><dd>${escapeHtml(stay.checkIn)}</dd></div><div><dt>Check-out</dt><dd>${escapeHtml(stay.checkOut)}</dd></div><div><dt>Contact</dt><dd>${escapeHtml(stay.contact)}</dd></div><div><dt>Booking ref</dt><dd>${escapeHtml(stay.bookingReference)}</dd></div></dl>${mapLink(stayLocation)}` })}
+      ${editMode && session.authenticated ? editableFlights(flights) : card({ id: 'flight-details', title: 'Flights', meta: 'Travel details', body: `<h3>Outbound</h3><p>${escapeHtml(flights.outbound)}</p><h3>Return</h3><p>${escapeHtml(flights.return)}</p>${list(flights.notes)}` })}
     </section>
-    <section class="section">${card({ id: 'stay-notes', title: 'Stay notes', body: `${list(trip.stay.notes)}${noteBox('note-stay')}` })}</section>
-    ${editPanels()}
+    <section class="section">${card({ id: 'stay-notes', title: 'Stay notes', body: `${list(stay.notes)}${noteBox('note-stay')}` })}</section>
   `;
+}
+
+function editableStay(stay) {
+  return card({
+    id: 'stay-main',
+    title: 'Stay details',
+    tone: 'accent-card',
+    image: stay.image,
+    body: `
+      ${sectionToolbar('stay', 'Stay details')}
+      <div class="inline-edit-form">
+        ${editField('stay', ['name'], 'Name', stay.name)}
+        ${editField('stay', ['address'], 'Address', stay.address)}
+        ${editField('stay', ['checkIn'], 'Check-in', stay.checkIn)}
+        ${editField('stay', ['checkOut'], 'Check-out', stay.checkOut)}
+        ${editField('stay', ['contact'], 'Contact', stay.contact, { type: 'textarea', rows: 2 })}
+        ${editField('stay', ['bookingReference'], 'Booking reference', stay.bookingReference)}
+        ${editField('stay', ['locationId'], 'Map place id', stay.locationId)}
+        ${editField('stay', ['image'], 'Image URL or path', stay.image ?? '')}
+        ${simpleListEditor('stay', ['notes'], stay.notes, 'Stay note')}
+      </div>
+    `
+  });
+}
+
+function editableFlights(flights) {
+  return card({
+    id: 'flight-details',
+    title: 'Flights',
+    body: `
+      ${sectionToolbar('flights', 'Flight details')}
+      <div class="inline-edit-form">
+        ${editField('flights', ['outbound'], 'Outbound', flights.outbound, { type: 'textarea' })}
+        ${editField('flights', ['return'], 'Return', flights.return, { type: 'textarea' })}
+        ${simpleListEditor('flights', ['notes'], flights.notes, 'Flight note')}
+      </div>
+    `
+  });
 }
 
 function renderFood() {
+  const restaurants = sectionValue('restaurants');
   main.innerHTML = `
     ${editorBar()}
     ${pageHeader('Food', 'Restaurants and wishlist', 'Track booked places, romantic dinner ideas, and easy fallback meals.')}
-    <section class="content-grid two">
-      ${trip.restaurants.map((restaurant) => card({
-        id: restaurant.id,
-        title: restaurant.name,
-        meta: `${restaurant.area} · ${restaurant.cuisine}`,
-        favorite: true,
-        body: `${statusPill(restaurant.status)}<p>${escapeHtml(restaurant.notes)}</p>${mapLink(locationById(restaurant.locationId))}${noteBox(`note-${restaurant.id}`, 'Food notes')}`
-      })).join('')}
+    ${sectionToolbar('restaurants', 'Restaurant cards', 'restaurant')}
+    <section class="content-grid two editable-list">
+      ${restaurants.map((restaurant, index) => editMode && session.authenticated ? editableRestaurant(restaurant, index, restaurants.length) : restaurantCard(restaurant)).join('')}
     </section>
-    ${editPanels()}
   `;
+}
+
+function restaurantCard(restaurant) {
+  return card({
+    id: restaurant.id,
+    title: restaurant.name,
+    meta: `${restaurant.area} · ${restaurant.cuisine}`,
+    favorite: true,
+    image: restaurant.image,
+    body: `${statusPill(restaurant.status)}<p>${escapeHtml(restaurant.notes)}</p>${mapLink(locationById(restaurant.locationId))}${noteBox(`note-${restaurant.id}`, 'Food notes')}`
+  });
+}
+
+function editableRestaurant(restaurant, index, total) {
+  return card({
+    id: restaurant.id,
+    title: restaurant.name,
+    meta: restaurant.area,
+    image: restaurant.image,
+    body: `
+      <div class="inline-edit-form">
+        ${editField('restaurants', [index, 'name'], 'Title', restaurant.name)}
+        ${editField('restaurants', [index, 'area'], 'Area', restaurant.area)}
+        ${editSelect('restaurants', [index, 'status'], 'Status', restaurant.status, ['placeholder', 'wishlist', 'planned', 'booked', 'confirmed'])}
+        ${editField('restaurants', [index, 'cuisine'], 'Cuisine', restaurant.cuisine)}
+        ${editField('restaurants', [index, 'notes'], 'Description', restaurant.notes, { type: 'textarea' })}
+        ${editField('restaurants', [index, 'locationId'], 'Map place id', restaurant.locationId ?? '')}
+        ${editField('restaurants', [index, 'image'], 'Image URL or path', restaurant.image ?? '')}
+        ${editActions('restaurants', [], index, total)}
+      </div>
+    `,
+    editAttrs: editableItemAttrs('restaurants', [], index)
+  });
 }
 
 function renderMap() {
+  const locations = sectionValue('locations');
   main.innerHTML = `
     ${editorBar()}
     ${pageHeader('Map links', 'Saved places', 'Google Maps search links generated from editable location data. No embedded map or paid API key needed.')}
-    <section class="content-grid two">
-      ${trip.locations.map((location) => card({
-        id: `map-${location.id}`,
-        title: location.name,
-        meta: `${location.category} · ${location.area}`,
-        favorite: true,
-        body: `${location.notes ? `<p>${escapeHtml(location.notes)}</p>` : ''}<p class="muted">Search query: ${escapeHtml(location.mapQuery)}</p>${mapLink(location)}`
-      })).join('')}
+    ${sectionToolbar('locations', 'Map places', 'location')}
+    <section class="content-grid two editable-list">
+      ${locations.map((location, index) => editMode && session.authenticated ? editableLocation(location, index, locations.length) : locationCard(location)).join('')}
     </section>
-    ${editPanels()}
   `;
 }
 
+function locationCard(location) {
+  return card({
+    id: `map-${location.id}`,
+    title: location.name,
+    meta: `${location.category} · ${location.area}`,
+    favorite: true,
+    image: location.image,
+    body: `${location.notes ? `<p>${escapeHtml(location.notes)}</p>` : ''}<p class="muted">Search query: ${escapeHtml(location.mapQuery)}</p>${mapLink(location)}`
+  });
+}
+
+function editableLocation(location, index, total) {
+  return card({
+    id: `map-${location.id}`,
+    title: location.name,
+    meta: location.area,
+    image: location.image,
+    body: `
+      <div class="inline-edit-form">
+        ${editField('locations', [index, 'id'], 'Place id', location.id)}
+        ${editField('locations', [index, 'name'], 'Title', location.name)}
+        ${editField('locations', [index, 'area'], 'Area', location.area)}
+        ${editField('locations', [index, 'category'], 'Category', location.category)}
+        ${editField('locations', [index, 'mapQuery'], 'Google Maps search', location.mapQuery)}
+        ${editField('locations', [index, 'notes'], 'Description', location.notes ?? '', { type: 'textarea' })}
+        ${editField('locations', [index, 'image'], 'Image URL or path', location.image ?? '')}
+        ${editActions('locations', [], index, total)}
+      </div>
+    `,
+    editAttrs: editableItemAttrs('locations', [], index)
+  });
+}
+
 function renderPlanning() {
+  const planning = sectionValue('planning');
   main.innerHTML = `
     ${editorBar()}
     ${pageHeader('Before the trip', 'Planning board', 'Checklist, packing, budget notes, booking status, and open questions.')}
     <section class="content-grid two">
       ${sharedChecklistCard()}
-      ${card({ id: 'packing-list', title: 'Packing list', body: list(trip.planning.packing) })}
-      ${card({ id: 'budget-notes', title: 'Budget notes', body: `${list(trip.planning.budgetNotes)}${noteBox('note-budget')}` })}
-      ${card({ id: 'open-questions', title: 'Open questions', body: `${list(trip.planning.openQuestions)}${noteBox('note-open-questions')}` })}
+      ${editMode && session.authenticated ? editablePlanningList('packing', 'Packing list', planning.packing) : card({ id: 'packing-list', title: 'Packing list', body: list(planning.packing) })}
+      ${editMode && session.authenticated ? editablePlanningList('budgetNotes', 'Budget notes', planning.budgetNotes) : card({ id: 'budget-notes', title: 'Budget notes', body: `${list(planning.budgetNotes)}${noteBox('note-budget')}` })}
+      ${editMode && session.authenticated ? editablePlanningList('openQuestions', 'Open questions', planning.openQuestions) : card({ id: 'open-questions', title: 'Open questions', body: `${list(planning.openQuestions)}${noteBox('note-open-questions')}` })}
     </section>
-    ${editPanels()}
   `;
+}
+
+function editablePlanningList(key, title, items) {
+  return card({
+    id: key,
+    title,
+    body: `${sectionToolbar('planning', title)}<div class="inline-edit-form">${simpleListEditor('planning', [key], items, title)}</div>`
+  });
 }
 
 function sharedChecklistCard() {
@@ -447,160 +689,50 @@ function sharedChecklistCard() {
 }
 
 function renderGuide() {
+  const duringTrip = sectionValue('duringTrip');
   main.innerHTML = `
     ${editorBar()}
     ${pageHeader('Phone mode', 'During the trip', 'Fast access to emergency placeholders, transport notes, essentials, and shared saved places.')}
     <section class="content-grid two">
-      ${card({ id: 'guide-emergency', title: 'Emergency and contacts', tone: 'accent-card', body: list(trip.duringTrip.emergency) })}
-      ${card({ id: 'guide-transport', title: 'Transport notes', body: list(trip.duringTrip.transport) })}
-      ${card({ id: 'guide-essentials', title: 'Daily essentials', body: list(trip.duringTrip.dailyEssentials) })}
-      ${card({ id: 'guide-saved', title: 'Saved places', body: '<ul class="saved-list" data-saved-list></ul>' + list(trip.duringTrip.savedPlaces) + noteBox('note-during-trip', 'Quick trip notes') })}
-    </section>
-    ${editPanels()}
-  `;
-}
-
-function editPanels() {
-  if (!session.authenticated || !editMode) {
-    return '';
-  }
-
-  return `
-    <section class="section edit-section">
-      <div class="section-heading"><p class="eyebrow">Edit mode</p><h2>Update this page</h2></div>
-      <div class="editor-grid">${pageSections[page].map((sectionKey) => sectionEditor(sectionKey)).join('')}</div>
+      ${editMode && session.authenticated ? editableGuideList('emergency', 'Emergency and contacts', duringTrip.emergency, 'accent-card') : card({ id: 'guide-emergency', title: 'Emergency and contacts', tone: 'accent-card', body: list(duringTrip.emergency) })}
+      ${editMode && session.authenticated ? editableGuideList('transport', 'Transport notes', duringTrip.transport) : card({ id: 'guide-transport', title: 'Transport notes', body: list(duringTrip.transport) })}
+      ${editMode && session.authenticated ? editableGuideList('dailyEssentials', 'Daily essentials', duringTrip.dailyEssentials) : card({ id: 'guide-essentials', title: 'Daily essentials', body: list(duringTrip.dailyEssentials) })}
+      ${editMode && session.authenticated ? editableGuideList('savedPlaces', 'Saved places', duringTrip.savedPlaces) : card({ id: 'guide-saved', title: 'Saved places', body: '<ul class="saved-list" data-saved-list></ul>' + list(duringTrip.savedPlaces) + noteBox('note-during-trip', 'Quick trip notes') })}
     </section>
   `;
 }
 
-function sectionEditor(sectionKey) {
-  const draft = getSectionDraft(sectionKey);
-  const restored = window.localStorage.getItem(draftKey(sectionKey)) ? 'Unsaved draft restored on this device.' : '';
+function editableGuideList(key, title, items, tone = '') {
+  return card({
+    id: `guide-${key}`,
+    title,
+    tone,
+    body: `${sectionToolbar('duringTrip', title)}<div class="inline-edit-form">${simpleListEditor('duringTrip', [key], items, title)}</div>`
+  });
+}
+
+function simpleListEditor(sectionKey, path, items, label) {
   return `
-    <article class="card editor-card" data-section-editor="${sectionKey}">
-      <div class="card-title-row">
-        <div><p class="card-meta">version ${trip.versions[sectionKey]?.version ?? 1}</p><h2>${sectionLabels[sectionKey] ?? sectionKey}</h2></div>
-      </div>
-      <div class="structured-editor">${renderStructuredFields(sectionKey, draft, [])}</div>
-      <details class="json-fallback">
-        <summary>Advanced JSON</summary>
-        <textarea data-section-json rows="10" spellcheck="false">${escapeHtml(JSON.stringify(draft, null, 2))}</textarea>
-      </details>
-      <div class="mini-actions">
-        <button class="button compact" type="button" data-section-save>Save changes</button>
-        <button class="button compact ghost" type="button" data-section-reset>Reset draft</button>
-        <span class="form-status" data-section-status>${restored}</span>
-      </div>
-    </article>
-  `;
-}
-
-function renderStructuredFields(sectionKey, value, path) {
-  if (Array.isArray(value)) {
-    return renderArrayEditor(sectionKey, value, path);
-  }
-  if (value && typeof value === 'object') {
-    return renderObjectEditor(sectionKey, value, path);
-  }
-  return renderScalarEditor(value, path);
-}
-
-function renderObjectEditor(sectionKey, value, path) {
-  return Object.entries(value).map(([key, fieldValue]) => {
-    const nextPath = [...path, key];
-    const label = labelFor(key);
-    if (Array.isArray(fieldValue)) {
-      return `<section class="editor-group"><h3>${escapeHtml(label)}</h3>${renderArrayEditor(sectionKey, fieldValue, nextPath)}</section>`;
-    }
-    if (fieldValue && typeof fieldValue === 'object') {
-      return `<section class="editor-group nested"><h3>${escapeHtml(label)}</h3>${renderObjectEditor(sectionKey, fieldValue, nextPath)}</section>`;
-    }
-    return renderField(label, fieldValue, nextPath);
-  }).join('');
-}
-
-function renderArrayEditor(sectionKey, value, path) {
-  const simple = value.every((item) => typeof item !== 'object' || item === null);
-  const itemClass = simple ? 'simple-list-editor' : 'object-list-editor';
-  return `
-    <div class="${itemClass}">
-      ${value.map((item, index) => {
-        const itemPath = [...path, index];
-        if (simple) {
-          return `
-            <div class="editor-row">
-              ${renderField(`Item ${index + 1}`, item, itemPath)}
-              <button class="icon-button small danger" type="button" data-remove-path="${pathAttr(itemPath)}" aria-label="Remove item">x</button>
-            </div>
-          `;
-        }
-        return `
-          <details class="object-editor-item" open>
-            <summary><span>${escapeHtml(itemTitle(sectionKey, item, index))}</span><button class="icon-button small danger" type="button" data-remove-path="${pathAttr(itemPath)}" aria-label="Remove item">x</button></summary>
-            ${renderObjectEditor(sectionKey, item, itemPath)}
-          </details>
-        `;
-      }).join('')}
-      <button class="button compact secondary" type="button" data-add-path="${pathAttr(path)}" data-add-section="${escapeHtml(sectionKey)}">Add item</button>
+    <div class="simple-list-editor editable-list">
+      ${items.map((item, index) => `
+        <div class="editor-row" ${editableItemAttrs(sectionKey, path, index)}>
+          ${editField(sectionKey, [...path, index], `${label} ${index + 1}`, item, { type: 'textarea', rows: 2 })}
+          ${editActions(sectionKey, path, index, items.length)}
+        </div>
+      `).join('')}
+      <button class="button compact secondary" type="button" data-add-section="${sectionKey}" data-add-kind="text" data-add-path="${pathAttr(path)}">Add</button>
     </div>
   `;
 }
 
-function renderField(label, value, path) {
-  const pathJson = pathAttr(path);
-  const key = String(path.at(-1));
-  if (typeof value === 'boolean') {
-    return `<label class="editor-field checkbox-field"><input type="checkbox" data-edit-path="${pathJson}" data-edit-type="boolean" ${value ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`;
-  }
-  if (Array.isArray(value)) {
-    return `<label class="editor-field"><span>${escapeHtml(label)}</span><input data-edit-path="${pathJson}" data-edit-type="csv" value="${escapeHtml(value.join(', '))}"></label>`;
-  }
-  const inputType = key.toLowerCase().includes('date') && /^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? 'date' : 'text';
-  const longText = String(value ?? '').length > 70 || ['summary', 'notes', 'plan', 'subtitle', 'bestFor', 'contact', 'bookingReference', 'outbound', 'return'].includes(key);
-  if (longText) {
-    return `<label class="editor-field"><span>${escapeHtml(label)}</span><textarea data-edit-path="${pathJson}" rows="3">${escapeHtml(value)}</textarea></label>`;
-  }
-  return `<label class="editor-field"><span>${escapeHtml(label)}</span><input type="${inputType}" data-edit-path="${pathJson}" value="${escapeHtml(value)}"></label>`;
-}
-
-function renderScalarEditor(value, path) {
-  return renderField('Value', value, path);
-}
-
-function labelFor(key) {
-  return key
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, (character) => character.toUpperCase());
-}
-
-function itemTitle(sectionKey, item, index) {
-  return item.name || item.label || item.title || item.text || item.id || `${sectionLabels[sectionKey] ?? 'Item'} ${index + 1}`;
-}
-
-function defaultItem(sectionKey, path, currentItems) {
-  const pathName = path.join('.');
-  if (pathName.endsWith('locationIds')) {
-    return trip.locations[0]?.id ?? '';
-  }
-  if (sectionKey === 'highlights') {
+function defaultItem(kind, currentItems) {
+  if (kind === 'highlight') {
     return 'New trip highlight';
   }
-  if (sectionKey === 'quickLinks') {
+  if (kind === 'quickLink') {
     return { label: 'New link', href: './planning.html' };
   }
-  if (sectionKey === 'locations') {
-    const id = uniqueId('place', currentItems);
-    return { id, name: 'New place', area: 'Zakynthos', category: 'Place', mapQuery: 'Zakynthos Greece', notes: '' };
-  }
-  if (sectionKey === 'attractions') {
-    const id = uniqueId('att', currentItems);
-    return { id, name: 'New idea', category: 'Beach', area: 'Zakynthos', summary: 'Add a short description.', bestFor: 'Add what this is best for.', locationId: trip.locations[0]?.id ?? '', mustDo: false };
-  }
-  if (sectionKey === 'restaurants') {
-    const id = uniqueId('food', currentItems);
-    return { id, name: 'New restaurant', area: 'Zakynthos', status: 'wishlist', cuisine: 'Greek', notes: 'Add booking or menu notes.', locationId: trip.locations[0]?.id ?? '' };
-  }
-  if (sectionKey === 'itinerary') {
+  if (kind === 'day') {
     const id = uniqueId('day', currentItems);
     return {
       id,
@@ -612,9 +744,17 @@ function defaultItem(sectionKey, path, currentItems) {
       evening: { title: 'Evening', plan: 'Add the evening plan.', notes: '', locationIds: [] }
     };
   }
-  if (pathName.endsWith('checklist')) {
-    const id = slug(`task-${currentItems.length + 1}`);
-    return { id, text: 'New checklist item', status: 'planned' };
+  if (kind === 'attraction') {
+    const id = uniqueId('att', currentItems);
+    return { id, name: 'New idea', category: 'Beach', area: 'Zakynthos', summary: 'Add a short description.', bestFor: 'Add what this is best for.', locationId: trip.locations[0]?.id ?? '', image: '', mustDo: false };
+  }
+  if (kind === 'restaurant') {
+    const id = uniqueId('food', currentItems);
+    return { id, name: 'New restaurant', area: 'Zakynthos', status: 'wishlist', cuisine: 'Greek', notes: 'Add booking or menu notes.', locationId: trip.locations[0]?.id ?? '', image: '' };
+  }
+  if (kind === 'location') {
+    const id = uniqueId('place', currentItems);
+    return { id, name: 'New place', area: 'Zakynthos', category: 'Place', mapQuery: 'Zakynthos Greece', notes: '', image: '' };
   }
   return 'New item';
 }
@@ -777,83 +917,124 @@ function setupChecklist() {
   });
 }
 
-function setupSectionEditors() {
-  document.querySelectorAll('[data-section-editor]').forEach((editor) => {
-    const sectionKey = editor.dataset.sectionEditor;
-    const status = editor.querySelector('[data-section-status]');
-    const jsonTextarea = editor.querySelector('[data-section-json]');
+function setToolbarStatus(sectionKey, message) {
+  document.querySelectorAll(`[data-section-toolbar="${sectionKey}"] [data-section-status]`).forEach((status) => {
+    status.textContent = message;
+  });
+}
 
-    editor.querySelectorAll('[data-edit-path]').forEach((input) => {
-      input.addEventListener('input', () => {
-        const draft = getSectionDraft(sectionKey);
-        const path = parsePath(input.dataset.editPath);
-        let value = input.type === 'checkbox' ? input.checked : input.value;
-        if (input.dataset.editType === 'csv') {
-          value = input.value.split(',').map((item) => item.trim()).filter(Boolean);
-        }
-        setAtPath(draft, path, value);
-        saveDraft(sectionKey);
-        if (jsonTextarea) {
-          jsonTextarea.value = JSON.stringify(draft, null, 2);
-        }
-        status.textContent = 'Draft saved on this device.';
-      });
-    });
-
-    editor.querySelectorAll('[data-add-path]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const draft = getSectionDraft(sectionKey);
-        const path = parsePath(button.dataset.addPath);
-        const target = getAtPath(draft, path);
-        if (!Array.isArray(target)) {
-          status.textContent = 'Cannot add to this field.';
-          return;
-        }
-        target.push(defaultItem(sectionKey, path, target));
-        saveDraft(sectionKey);
-        renderPage();
-      });
-    });
-
-    editor.querySelectorAll('[data-remove-path]').forEach((button) => {
-      button.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const draft = getSectionDraft(sectionKey);
-        removeAtPath(draft, parsePath(button.dataset.removePath));
-        saveDraft(sectionKey);
-        renderPage();
-      });
-    });
-
-    jsonTextarea?.addEventListener('input', (event) => {
-      try {
-        sectionDrafts.set(sectionKey, JSON.parse(event.currentTarget.value));
-        saveDraft(sectionKey);
-        status.textContent = 'Advanced JSON draft saved on this device.';
-      } catch {
-        status.textContent = 'JSON draft has a syntax error.';
+function setupInlineEditing() {
+  document.querySelectorAll('[data-inline-path]').forEach((input) => {
+    input.addEventListener('input', () => {
+      const sectionKey = input.dataset.inlineSection;
+      const draft = getSectionDraft(sectionKey);
+      const path = parsePath(input.dataset.inlinePath);
+      let value = input.type === 'checkbox' ? input.checked : input.value;
+      if (input.dataset.inlineType === 'csv') {
+        value = input.value.split(',').map((item) => item.trim()).filter(Boolean);
       }
+      setAtPath(draft, path, value);
+      saveDraft(sectionKey);
+      setToolbarStatus(sectionKey, 'Draft saved on this device.');
     });
+  });
 
-    editor.querySelector('[data-section-reset]').addEventListener('click', () => {
-      clearDraft(sectionKey);
-      status.textContent = 'Draft reset.';
+  document.querySelectorAll('[data-add-section]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const sectionKey = button.dataset.addSection;
+      const draft = getSectionDraft(sectionKey);
+      const path = button.dataset.addPath ? parsePath(button.dataset.addPath) : [];
+      const target = path.length ? getAtPath(draft, path) : draft;
+      if (!Array.isArray(target)) {
+        setToolbarStatus(sectionKey, 'This field cannot add items.');
+        return;
+      }
+      target.push(defaultItem(button.dataset.addKind, target));
+      saveDraft(sectionKey);
       renderPage();
     });
+  });
 
-    editor.querySelector('[data-section-save]').addEventListener('click', async () => {
-      status.textContent = 'Saving...';
+  document.querySelectorAll('[data-remove-section]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const sectionKey = button.dataset.removeSection;
+      const draft = getSectionDraft(sectionKey);
+      removeAtPath(draft, parsePath(button.dataset.removePath));
+      saveDraft(sectionKey);
+      renderPage();
+    });
+  });
+
+  document.querySelectorAll('[data-move-section]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const sectionKey = button.dataset.moveSection;
+      const draft = getSectionDraft(sectionKey);
+      const items = getAtPath(draft, parsePath(button.dataset.movePath));
+      moveArrayItem(items, Number(button.dataset.moveIndex), Number(button.dataset.moveIndex) + Number(button.dataset.moveDirection));
+      saveDraft(sectionKey);
+      renderPage();
+    });
+  });
+
+  document.querySelectorAll('[data-save-section]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const sectionKey = button.dataset.saveSection;
+      button.disabled = true;
+      setToolbarStatus(sectionKey, 'Saving...');
       try {
         const saved = await saveSection(sectionKey, getSectionDraft(sectionKey), trip.versions[sectionKey]?.version);
         trip[sectionKey] = saved.value;
         trip.versions[sectionKey] = { version: saved.version, updatedAt: saved.updatedAt };
         clearDraft(sectionKey);
-        status.textContent = 'Saved.';
+        setToolbarStatus(sectionKey, 'Saved.');
         renderPage();
       } catch (error) {
-        status.textContent = error.status === 409 ? 'Someone saved newer data. Refresh before editing this section.' : error.message;
+        button.disabled = false;
+        setToolbarStatus(sectionKey, error.status === 409 ? 'Someone saved newer data. Refresh before editing this section.' : error.message);
       }
+    });
+  });
+
+  document.querySelectorAll('[data-reset-section]').forEach((button) => {
+    button.addEventListener('click', () => {
+      clearDraft(button.dataset.resetSection);
+      renderPage();
+    });
+  });
+
+  setupDragAndDrop();
+}
+
+function setupDragAndDrop() {
+  document.querySelectorAll('[data-reorder-section]').forEach((item) => {
+    item.addEventListener('dragstart', () => {
+      draggedItem = {
+        sectionKey: item.dataset.reorderSection,
+        path: item.dataset.reorderPath,
+        index: Number(item.dataset.reorderIndex)
+      };
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      draggedItem = null;
+    });
+    item.addEventListener('dragover', (event) => {
+      if (draggedItem && draggedItem.sectionKey === item.dataset.reorderSection && draggedItem.path === item.dataset.reorderPath) {
+        event.preventDefault();
+      }
+    });
+    item.addEventListener('drop', (event) => {
+      event.preventDefault();
+      if (!draggedItem || draggedItem.sectionKey !== item.dataset.reorderSection || draggedItem.path !== item.dataset.reorderPath) {
+        return;
+      }
+      const sectionKey = item.dataset.reorderSection;
+      const draft = getSectionDraft(sectionKey);
+      const items = getAtPath(draft, parsePath(item.dataset.reorderPath));
+      moveArrayItem(items, draggedItem.index, Number(item.dataset.reorderIndex));
+      saveDraft(sectionKey);
+      renderPage();
     });
   });
 }
@@ -887,7 +1068,7 @@ function renderPage() {
   setupFavorites();
   setupNotes();
   setupChecklist();
-  setupSectionEditors();
+  setupInlineEditing();
   setupCountdown();
   setupBeforeUnload();
 }

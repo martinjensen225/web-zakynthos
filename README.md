@@ -444,7 +444,9 @@ The original `content/*.json` files are seed data. Runtime edits are saved in D1
 
 ## Website Editing
 
-Signed-in editors use the `Edit trip` button on each page. Edit mode shows structured controls for the sections used by that page, including add and remove buttons for highlights, quick links, itinerary days, places, attractions, restaurants, packing items, budget notes, open questions, and during-trip guide items.
+Signed-in editors use the `Edit trip` button on each page. Edit mode changes the visible trip cards into editable cards, including fields for titles, descriptions, dates, links, map queries, status, notes, and optional image URLs or image paths.
+
+Card and list sections support add, delete, move up, move down, and drag-and-drop reordering where the order matters. This covers highlights, quick links, itinerary days, places, attractions, restaurants, packing items, budget notes, open questions, and during-trip guide items.
 
 Each section is saved as a D1-backed `trip_sections` record. The client keeps an unsaved draft in browser `localStorage` only until the editor saves or resets that section. Saved changes are loaded from D1 by all users and devices through `/api/trip`.
 
@@ -452,7 +454,7 @@ Notes, favorites, and the visible planning checklist use dedicated API endpoints
 
 Section saves validate the edited section and the merged full trip before writing to D1. This prevents common broken states such as removing a location that is still referenced by an itinerary day, restaurant, attraction, or stay record.
 
-The advanced JSON drawer remains available for careful bulk edits, but normal add, update, and remove workflows should use the structured controls.
+Editing is intended to be no-code. The website does not expose the raw JSON editor in normal edit mode.
 
 ## API
 

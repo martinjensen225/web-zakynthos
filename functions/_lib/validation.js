@@ -114,6 +114,7 @@ export function validateSection(sectionKey, value) {
     assertText(value.contact, 'stay.contact');
     assertText(value.bookingReference, 'stay.bookingReference');
     assertText(value.locationId, 'stay.locationId');
+    assertOptionalText(value.image, 'stay.image');
     assertStringArray(value.notes, 'stay.notes');
   }
 
@@ -124,6 +125,7 @@ export function validateSection(sectionKey, value) {
       assertText(location.category, 'locations.category');
       assertText(location.mapQuery, 'locations.mapQuery');
       assertOptionalText(location.notes, 'locations.notes');
+      assertOptionalText(location.image, 'locations.image');
     }
   }
 
@@ -135,6 +137,7 @@ export function validateSection(sectionKey, value) {
       assertText(attraction.summary, 'attractions.summary');
       assertText(attraction.bestFor, 'attractions.bestFor');
       assertOptionalText(attraction.locationId, 'attractions.locationId');
+      assertOptionalText(attraction.image, 'attractions.image');
       assertBoolean(attraction.mustDo, 'attractions.mustDo');
     }
   }
@@ -149,6 +152,7 @@ export function validateSection(sectionKey, value) {
       assertText(restaurant.cuisine, 'restaurants.cuisine');
       assertText(restaurant.notes, 'restaurants.notes');
       assertOptionalText(restaurant.locationId, 'restaurants.locationId');
+      assertOptionalText(restaurant.image, 'restaurants.image');
     }
   }
 

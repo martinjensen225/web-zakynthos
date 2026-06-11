@@ -124,10 +124,11 @@ const app = await readFile(path.join(root, 'assets/app.js'), 'utf8');
 assert(!app.includes('zakynthos:favorites'), 'Favorites must not use local-only storage.');
 assert(!app.includes('zakynthos:notes'), 'Notes must not use local-only storage.');
 assert(!app.includes('zakynthos:checks'), 'Checklist state must not use local-only storage.');
-assert(app.includes('structured-editor'), 'Editor mode must expose structured trip editing controls.');
+assert(app.includes('setupInlineEditing'), 'Editor mode must edit the visible trip cards inline.');
 assert(app.includes('data-add-path'), 'Editor mode must support adding section items.');
 assert(app.includes('data-remove-path'), 'Editor mode must support removing section items.');
 assert(app.includes('saveSection(sectionKey'), 'Structured section edits must save through the API.');
+assert(app.includes('data-reorder-section'), 'Editor mode must support drag-and-drop reordering.');
 
 const dataClient = await readFile(path.join(root, 'data/trip.js'), 'utf8');
 assert(dataClient.includes('/api/trip'), 'The app must load shared trip data from the API.');
