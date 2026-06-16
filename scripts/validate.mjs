@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { validateFullTrip } from '../functions/_lib/validation.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const requiredPages = ['index.html', 'trip.html', 'itinerary.html', 'map.html', 'budget.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
+const requiredPages = ['index.html', 'trip.html', 'itinerary.html', 'map.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
 const contentFiles = [
   'meta.json',
   'highlights.json',
