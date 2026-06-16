@@ -1,10 +1,10 @@
-import { access, readFile, stat } from 'node:fs/promises';
+import { access, readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateFullTrip } from '../functions/_lib/validation.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const requiredPages = ['index.html', 'itinerary.html', 'map.html', 'budget.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
+const requiredPages = ['index.html', 'trip.html', 'itinerary.html', 'map.html', 'budget.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
 const contentFiles = [
   'meta.json',
   'highlights.json',
@@ -41,83 +41,96 @@ async function readJson(relativePath) {
   return JSON.parse(await readFile(path.join(root, relativePath), 'utf8'));
 }
 
-for (const page of requiredPages) {
-  await access(path.join(root, page));
+async function validateTripContent(tripId) {
+  for (const fileName of contentFiles) {
+    await access(path.join(root, 'content', 'trips', tripId, fileName));
+  }
+
+  const [meta, highlights, quickLinks, flights, stay, locations, itinerary, attractions, restaurants, planning, duringTrip] = await Promise.all([
+    readJson(`content/trips/${tripId}/meta.json`),
+    readJson(`content/trips/${tripId}/highlights.json`),
+    readJson(`content/trips/${tripId}/quick-links.json`),
+    readJson(`content/trips/${tripId}/flights.json`),
+    readJson(`content/trips/${tripId}/stay.json`),
+    readJson(`content/trips/${tripId}/locations.json`),
+    readJson(`content/trips/${tripId}/itinerary.json`),
+    readJson(`content/trips/${tripId}/attractions.json`),
+    readJson(`content/trips/${tripId}/restaurants.json`),
+    readJson(`content/trips/${tripId}/planning.json`),
+    readJson(`content/trips/${tripId}/during-trip.json`)
+  ]);
+
+  assert(meta.title, `${tripId}: meta.title is required.`);
+  assert(meta.startDate, `${tripId}: meta.startDate is required.`);
+  assert(meta.destination, `${tripId}: meta.destination is required.`);
+  assert(Array.isArray(locations) && locations.length > 0, `${tripId}: at least one location is required.`);
+  assert(Array.isArray(itinerary) && itinerary.length > 0, `${tripId}: at least one itinerary day is required.`);
+  assert(Array.isArray(highlights) && highlights.length > 0, `${tripId}: at least one highlight is required.`);
+  assert(Array.isArray(quickLinks) && quickLinks.length > 0, `${tripId}: at least one quick link is required.`);
+  assert(Array.isArray(flights.notes), `${tripId}: flights.notes must be an array.`);
+  assert(Array.isArray(stay.notes), `${tripId}: stay.notes must be an array.`);
+  assert(Array.isArray(planning.checklist), `${tripId}: planning.checklist must be an array.`);
+  assert(Array.isArray(planning.decisions), `${tripId}: planning.decisions must be an array.`);
+  assert(Array.isArray(planning.tasks), `${tripId}: planning.tasks must be an array.`);
+  assert(Array.isArray(planning.packing), `${tripId}: planning.packing must be an array.`);
+  assert(Array.isArray(planning.budget.expenses), `${tripId}: planning.budget.expenses must be an array.`);
+  assert(Array.isArray(planning.documents), `${tripId}: planning.documents must be an array.`);
+  assert(Array.isArray(duringTrip.emergency), `${tripId}: duringTrip.emergency must be an array.`);
+
+  validateFullTrip({
+    meta,
+    highlights,
+    quickLinks,
+    flights,
+    stay,
+    locations,
+    itinerary,
+    attractions,
+    restaurants,
+    planning,
+    duringTrip
+  });
+
+  const locationIds = new Set(locations.map((location) => location.id));
+  for (const day of itinerary) {
+    assert(Array.isArray(day.items) && day.items.length > 0, `${tripId}: ${day.id} must have plan items.`);
+    for (const item of day.items) {
+      if (item.locationId) {
+        assert(locationIds.has(item.locationId), `${tripId}: unknown location "${item.locationId}" in ${item.id}.`);
+      }
+    }
+  }
+
+  for (const attraction of attractions) {
+    if (attraction.locationId) {
+      assert(locationIds.has(attraction.locationId), `${tripId}: unknown location "${attraction.locationId}" in ${attraction.id}.`);
+    }
+  }
+
+  for (const restaurant of restaurants) {
+    if (restaurant.locationId) {
+      assert(locationIds.has(restaurant.locationId), `${tripId}: unknown location "${restaurant.locationId}" in ${restaurant.id}.`);
+    }
+  }
 }
 
-for (const fileName of contentFiles) {
-  await access(path.join(root, 'content', fileName));
+for (const page of requiredPages) {
+  await access(path.join(root, page));
 }
 
 for (const fileName of requiredSharedAppFiles) {
   await access(path.join(root, fileName));
 }
 
-const [meta, highlights, quickLinks, flights, stay, locations, itinerary, attractions, restaurants, planning, duringTrip] = await Promise.all([
-  readJson('content/meta.json'),
-  readJson('content/highlights.json'),
-  readJson('content/quick-links.json'),
-  readJson('content/flights.json'),
-  readJson('content/stay.json'),
-  readJson('content/locations.json'),
-  readJson('content/itinerary.json'),
-  readJson('content/attractions.json'),
-  readJson('content/restaurants.json'),
-  readJson('content/planning.json'),
-  readJson('content/during-trip.json')
-]);
+const tripIds = (await readdir(path.join(root, 'content', 'trips'), { withFileTypes: true }))
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+assert(tripIds.includes('zakynthos-2026'), 'Zakynthos must remain seeded as content/trips/zakynthos-2026.');
+assert(tripIds[0] === 'zakynthos-2026', 'Zakynthos must remain the first trip entry.');
 
-assert(meta.title, 'meta.title is required.');
-assert(meta.startDate, 'meta.startDate is required.');
-assert(meta.destination, 'meta.destination is required.');
-assert(Array.isArray(locations) && locations.length > 0, 'At least one location is required.');
-assert(Array.isArray(itinerary) && itinerary.length > 0, 'At least one itinerary day is required.');
-assert(Array.isArray(highlights) && highlights.length > 0, 'At least one highlight is required.');
-assert(Array.isArray(quickLinks) && quickLinks.length > 0, 'At least one quick link is required.');
-assert(Array.isArray(flights.notes), 'flights.notes must be an array.');
-assert(Array.isArray(stay.notes), 'stay.notes must be an array.');
-assert(Array.isArray(planning.checklist), 'planning.checklist must be an array.');
-assert(Array.isArray(planning.decisions), 'planning.decisions must be an array.');
-assert(Array.isArray(planning.tasks), 'planning.tasks must be an array.');
-assert(Array.isArray(planning.packing), 'planning.packing must be an array.');
-assert(Array.isArray(planning.budget.expenses), 'planning.budget.expenses must be an array.');
-assert(Array.isArray(planning.documents), 'planning.documents must be an array.');
-assert(Array.isArray(duringTrip.emergency), 'duringTrip.emergency must be an array.');
-
-validateFullTrip({
-  meta,
-  highlights,
-  quickLinks,
-  flights,
-  stay,
-  locations,
-  itinerary,
-  attractions,
-  restaurants,
-  planning,
-  duringTrip
-});
-
-const locationIds = new Set(locations.map((location) => location.id));
-for (const day of itinerary) {
-  assert(Array.isArray(day.items) && day.items.length > 0, `${day.id} must have plan items.`);
-  for (const item of day.items) {
-    if (item.locationId) {
-      assert(locationIds.has(item.locationId), `Unknown location "${item.locationId}" in ${item.id}.`);
-    }
-  }
-}
-
-for (const attraction of attractions) {
-  if (attraction.locationId) {
-    assert(locationIds.has(attraction.locationId), `Unknown location "${attraction.locationId}" in ${attraction.id}.`);
-  }
-}
-
-for (const restaurant of restaurants) {
-  if (restaurant.locationId) {
-    assert(locationIds.has(restaurant.locationId), `Unknown location "${restaurant.locationId}" in ${restaurant.id}.`);
-  }
+for (const tripId of tripIds) {
+  await validateTripContent(tripId);
 }
 
 const css = await readFile(path.join(root, 'assets/styles.css'), 'utf8');
@@ -130,19 +143,21 @@ const app = await readFile(path.join(root, 'assets/app.js'), 'utf8');
 assert(!app.includes('zakynthos:favorites'), 'Favorites must not use local-only storage.');
 assert(!app.includes('zakynthos:notes'), 'Notes must not use local-only storage.');
 assert(!app.includes('zakynthos:checks'), 'Checklist state must not use local-only storage.');
+assert(app.includes('renderPortfolio'), 'The app must render an all-trips portfolio.');
+assert(app.includes('setupTripManagement'), 'The portfolio must support creating, editing, and deleting trips.');
 assert(app.includes('setupInlineEditing'), 'Editor mode must edit the visible trip cards inline.');
 assert(app.includes('floatingAdd'), 'Primary planning screens must expose a floating Add control.');
 assert(app.includes('renderBudget'), 'The app must render a Budget section.');
 assert(app.includes('renderMore'), 'The app must render More tools for ideas, decisions, documents, packing, and tasks.');
 assert(app.includes('data-add-path'), 'Editor mode must support adding section items.');
 assert(app.includes('data-remove-path'), 'Editor mode must support removing section items.');
-assert(app.includes('saveSection(sectionKey'), 'Structured section edits must save through the API.');
+assert(app.includes('saveSection(trip.id'), 'Structured section edits must save through the trip-scoped API.');
 assert(app.includes('data-reorder-section'), 'Editor mode must support drag-and-drop reordering.');
 assert(app.includes('data-place-section'), 'Editor mode must use clickable place mapping controls.');
 assert(app.includes('quickLinkPicker'), 'Quick links must use a friendly page picker.');
 
 const dataClient = await readFile(path.join(root, 'data/trip.js'), 'utf8');
-assert(dataClient.includes('/api/trip'), 'The app must load shared trip data from the API.');
+assert(dataClient.includes('/api/trips'), 'The app must load shared trip data from the trip collection API.');
 
 const seedScript = await readFile(path.join(root, 'scripts/create-seed.mjs'), 'utf8');
 assert(!seedScript.includes("console.log('begin transaction;')"), 'Seed SQL must not emit BEGIN TRANSACTION for Wrangler D1 execute.');

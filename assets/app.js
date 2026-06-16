@@ -1,26 +1,31 @@
 import {
+  createTrip,
   deleteChecklistItem,
   deleteNote,
+  getSession,
   loadTrip,
+  loadTrips,
   login,
   logout,
+  removeTrip,
   saveChecklistItem,
   saveNote,
   saveSection,
-  setFavorite
+  setFavorite,
+  updateTrip
 } from '../data/trip.js';
 
 const page = document.body.dataset.page;
 const main = document.querySelector('#content');
 const primaryNav = [
-  ['index.html', 'Overview'],
+  ['trip.html', 'Cockpit'],
   ['itinerary.html', 'Plan'],
   ['map.html', 'Map'],
   ['budget.html', 'Budget'],
   ['more.html', 'More']
 ];
 const quickPages = [
-  ['./index.html', 'Overview'],
+  ['./trip.html', 'Cockpit'],
   ['./itinerary.html', 'Plan timeline'],
   ['./map.html', 'Map'],
   ['./budget.html', 'Budget'],
@@ -31,8 +36,10 @@ const quickPages = [
   ['./attractions.html', 'Ideas board'],
   ['./planning.html', 'Tasks and packing']
 ];
+const workspacePages = new Set(['trip', 'itinerary', 'map', 'budget', 'more', 'attractions', 'stay', 'food', 'guide', 'planning']);
 const secondaryPageNames = new Set(['attractions', 'stay', 'food', 'guide', 'planning']);
-const draftPrefix = 'zakynthos:draft:';
+const urlParams = new URLSearchParams(window.location.search);
+const selectedTripId = urlParams.get('trip') || '';
 const periodChoices = ['Morning', 'Afternoon', 'Evening', 'Flexible'];
 const statusChoices = ['Idea', 'Suggested', 'Discussing', 'Planned', 'Booked', 'Confirmed', 'Cancelled', 'Needs attention'];
 const decisionStatuses = ['Needs vote', 'Waiting for partner', 'Tie', 'Recommended match', 'Decided', 'Archived', 'Discussing'];
@@ -42,12 +49,15 @@ const documentStatuses = ['Missing', 'Added manually', 'Confirmed', 'Not needed 
 const planTypes = ['Activity', 'Transport', 'Accommodation', 'Meal', 'Restaurant', 'Reminder', 'Task', 'Note', 'Free time'];
 
 let trip;
+let trips = [];
 let session;
 let editMode = false;
 let dirtyDrafts = new Set();
 let sectionDrafts = new Map();
 let draggedItem = null;
 let showAddPanel = false;
+let showTripForm = false;
+let editingTripId = '';
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -98,8 +108,22 @@ function uniquePlanItemId(days, title) {
   return id;
 }
 
+function tripUrl(href, tripId = trip?.id ?? selectedTripId) {
+  if (!tripId) {
+    return href;
+  }
+  const [path, hash = ''] = href.split('#');
+  const normalizedPath = path || './trip.html';
+  const separator = normalizedPath.includes('?') ? '&' : '?';
+  return `${normalizedPath}${separator}trip=${encodeURIComponent(tripId)}${hash ? `#${hash}` : ''}`;
+}
+
+function portfolioUrl() {
+  return './index.html';
+}
+
 function draftKey(sectionKey) {
-  return `${draftPrefix}${sectionKey}`;
+  return `trip:${trip.id}:draft:${sectionKey}`;
 }
 
 function normalizeDraft(sectionKey, draft) {
@@ -366,7 +390,7 @@ function placePicker(sectionKey, path, selectedValue, options = {}) {
           </button>
         `).join('')}
       </div>
-      <a class="text-link small-link" href="./map.html">Manage places on the Map page</a>
+      <a class="text-link small-link" href="${tripUrl('./map.html')}">Manage places on the Map page</a>
     </div>
   `;
 }
@@ -448,21 +472,30 @@ function loginView(message = '') {
 }
 
 function renderShell() {
-  document.title = page === 'home' ? trip.meta.title : `${pageTitle()} · ${trip.meta.title}`;
-  document.querySelector('meta[name="description"]')?.setAttribute('content', trip.meta.subtitle);
+  const title = page === 'home' ? 'TandemTrip' : trip?.meta?.title ?? 'Trip not found';
+  document.title = page === 'home' ? 'TandemTrip · All trips' : `${pageTitle()} · ${title}`;
+  document.querySelector('meta[name="description"]')?.setAttribute('content', page === 'home' ? 'Trip portfolio and shared travel planning workspaces.' : trip?.meta?.subtitle ?? 'Selected trip workspace.');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#7a4a35');
   document.querySelector('[data-brand]').textContent = 'TripTogether';
-  document.querySelector('[data-nav]').innerHTML = primaryNav.map(([href, label]) => {
-    const currentPage = href === 'index.html' ? 'home' : href.replace('.html', '');
+  document.querySelector('[data-brand]').setAttribute('href', portfolioUrl());
+  if (page === 'home') {
+    document.querySelector('[data-nav]').innerHTML = '<a href="./index.html" aria-current="page">Trips</a>';
+  } else {
+    document.querySelector('[data-nav]').innerHTML = primaryNav.map(([href, label]) => {
+    const currentPage = href.replace('.html', '');
     const current = page === currentPage || (label === 'More' && secondaryPageNames.has(page));
-    return `<a href="./${href}" ${current ? 'aria-current="page"' : ''}>${label}</a>`;
-  }).join('');
-  document.querySelector('[data-footer]').textContent = 'Shared Zakynthos trip planner backed by protected Cloudflare D1 storage.';
+    return `<a href="${tripUrl(`./${href}`)}" ${current ? 'aria-current="page"' : ''}>${label}</a>`;
+    }).join('');
+  }
+  document.querySelector('[data-footer]').textContent = page === 'home'
+    ? 'Shared trip portfolio backed by protected Cloudflare D1 storage.'
+    : `${trip?.meta?.title ?? 'Trip'} workspace backed by protected Cloudflare D1 storage.`;
 }
 
 function pageTitle() {
   const titles = {
-    home: 'Overview',
+    home: 'All trips',
+    trip: 'Cockpit',
     itinerary: 'Plan',
     map: 'Map',
     budget: 'Budget',
@@ -593,7 +626,7 @@ function priorityCard(planning, itinerary) {
       title: openDecision.title,
       meta: 'Open decision',
       text: openDecision.notes || 'Vote, compare, and decide together.',
-      href: './more.html#decisions'
+      href: tripUrl('./more.html#decisions')
     };
   }
   const task = (planning.tasks ?? []).find((item) => item.status !== 'Done');
@@ -602,7 +635,7 @@ function priorityCard(planning, itinerary) {
       title: task.title,
       meta: 'Next task',
       text: task.notes || 'Keep the trip moving without a spreadsheet.',
-      href: './more.html#tasks'
+      href: tripUrl('./more.html#tasks')
     };
   }
   const attention = allPlanItems(itinerary).find((item) => normalizeStatus(item.status) === 'Needs attention');
@@ -611,15 +644,98 @@ function priorityCard(planning, itinerary) {
       title: attention.title,
       meta: 'Needs attention',
       text: attention.notes || 'Add the missing detail.',
-      href: './itinerary.html'
+      href: tripUrl('./itinerary.html')
     };
   }
   return {
     title: 'Plan looks calm',
     meta: 'Next action',
     text: 'Review the day cards and add details as bookings land.',
-    href: './itinerary.html'
+    href: tripUrl('./itinerary.html')
   };
+}
+
+function renderPortfolio() {
+  renderShell();
+  main.innerHTML = `
+    ${editorBar()}
+    <section class="page-header">
+      <p class="eyebrow">Trip portfolio</p>
+      <h1>All trips</h1>
+      <p class="lead">Pick a trip workspace, or create a new planning cockpit for the next journey.</p>
+      ${session.authenticated ? '<button class="button primary" type="button" data-new-trip>New trip</button>' : ''}
+    </section>
+    ${showTripForm ? tripForm() : ''}
+    <section class="portfolio-grid">
+      ${trips.length ? trips.map((summary) => tripSummaryCard(summary)).join('') : '<article class="empty-state"><h2>No trips yet</h2><p>Create the first trip after signing in as an editor.</p></article>'}
+    </section>
+  `;
+  setupEditorChrome();
+  setupTripManagement();
+}
+
+function tripSummaryCard(summary) {
+  const isEditing = editingTripId === summary.id;
+  if (isEditing) {
+    return `<article class="card trip-card">${tripForm(summary)}</article>`;
+  }
+  return `
+    <article class="card trip-card">
+      ${summary.coverImage ? `<img class="card-media" src="${escapeHtml(summary.coverImage)}" alt="${escapeHtml(summary.coverAlt ?? '')}">` : ''}
+      <div class="card-title-row">
+        <div>
+          <p class="card-meta">${escapeHtml(summary.destination || 'Destination pending')}</p>
+          <h2>${escapeHtml(summary.title)}</h2>
+        </div>
+        ${session.authenticated ? `
+          <div class="card-actions">
+            <button class="button compact ghost" type="button" data-edit-trip="${escapeHtml(summary.id)}">Edit</button>
+            <button class="button compact danger" type="button" data-delete-trip="${escapeHtml(summary.id)}" data-trip-title="${escapeHtml(summary.title)}">Delete</button>
+          </div>
+        ` : ''}
+      </div>
+      <p>${escapeHtml(summary.subtitle || 'Open the trip workspace to continue planning.')}</p>
+      <div class="card-chip-row">
+        <span class="soft-chip">${escapeHtml(formatDate(summary.startDate))} - ${escapeHtml(formatDate(summary.endDate))}</span>
+        <span class="soft-chip">${escapeHtml(summary.travelers || 'Travelers pending')}</span>
+        ${statusPill(summary.status)}
+      </div>
+      <div class="indicator-row">
+        <span>${summary.readiness}% ready</span>
+        <span>${summary.openDecisions} decisions</span>
+        <span>${summary.openTasks} tasks</span>
+      </div>
+      <a class="button primary" href="${tripUrl('./trip.html', summary.id)}">Open trip</a>
+    </article>
+  `;
+}
+
+function tripForm(summary = null) {
+  const isEdit = Boolean(summary);
+  const mood = Array.isArray(summary?.mood) ? summary.mood.join(', ') : '';
+  return `
+    <section class="${isEdit ? 'trip-management-form embedded' : 'trip-management-form card'}">
+      <form data-trip-form="${isEdit ? escapeHtml(summary.id) : ''}">
+        <div class="editor-grid compact">
+          <label><span>Trip title</span><input name="title" value="${escapeHtml(summary?.title ?? '')}" required></label>
+          <label><span>Destination</span><input name="destination" value="${escapeHtml(summary?.destination ?? '')}" required></label>
+          <label><span>Start date</span><input name="startDate" type="date" value="${escapeHtml(summary?.startDate ?? '')}" required></label>
+          <label><span>End date</span><input name="endDate" type="date" value="${escapeHtml(summary?.endDate ?? '')}" required></label>
+        </div>
+        <label><span>Travelers</span><input name="travelers" value="${escapeHtml(summary?.travelers ?? '')}" placeholder="Martin and Marta"></label>
+        <label><span>Subtitle</span><textarea name="subtitle" rows="2">${escapeHtml(summary?.subtitle ?? '')}</textarea></label>
+        <div class="editor-grid compact">
+          <label><span>Mood</span><input name="mood" value="${escapeHtml(mood)}" placeholder="Romantic, relaxed"></label>
+          <label><span>Cover image</span><input name="coverImage" value="${escapeHtml(summary?.coverImage ?? '')}" placeholder="./public/images/zakynthos-hero.png"></label>
+        </div>
+        <div class="mini-actions">
+          <button class="button primary" type="submit">${isEdit ? 'Save trip' : 'Create trip'}</button>
+          <button class="button ghost" type="button" data-cancel-trip-form>Cancel</button>
+          <span class="form-status" data-trip-form-status></span>
+        </div>
+      </form>
+    </section>
+  `;
 }
 
 function renderHome() {
@@ -672,13 +788,13 @@ function renderHome() {
       ` })}
     </section>
     <section class="content-grid two">
-      ${card({ id: 'today-preview', title: previewDay ? `${previewDay.label}: ${previewDay.focus}` : 'First day', meta: previewDay?.date ?? 'Add a day', body: previewDay ? `<div class="mini-timeline">${dayItems(previewDay).slice(0, 4).map((item) => `<div><span>${escapeHtml(item.period ?? 'Flexible')}</span><strong>${escapeHtml(item.title)}</strong>${statusPill(item.status)}</div>`).join('')}</div><a class="text-link" href="./itinerary.html">Open plan</a>` : '<p>Add the first day in edit mode.</p>' })}
+      ${card({ id: 'today-preview', title: previewDay ? `${previewDay.label}: ${previewDay.focus}` : 'First day', meta: previewDay?.date ?? 'Add a day', body: previewDay ? `<div class="mini-timeline">${dayItems(previewDay).slice(0, 4).map((item) => `<div><span>${escapeHtml(item.period ?? 'Flexible')}</span><strong>${escapeHtml(item.title)}</strong>${statusPill(item.status)}</div>`).join('')}</div><a class="text-link" href="${tripUrl('./itinerary.html')}">Open plan</a>` : '<p>Add the first day in edit mode.</p>' })}
       ${card({ id: 'open-items', title: 'Open decisions and attention', meta: 'Planning pulse', body: openItemsList(planning) })}
     </section>
     <section class="section">
       <div class="section-heading"><p class="eyebrow">Quick actions</p><h2>Most useful right now</h2></div>
       ${sectionToolbar('quickLinks', 'Quick links', 'quickLink')}
-      <div class="quick-link-grid editable-list">${quickLinks.map((link, index) => editMode && session.authenticated ? editableQuickLink(link, index, quickLinks.length) : `<a class="quick-link" href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join('')}</div>
+      <div class="quick-link-grid editable-list">${quickLinks.map((link, index) => editMode && session.authenticated ? editableQuickLink(link, index, quickLinks.length) : `<a class="quick-link" href="${escapeHtml(tripUrl(link.href))}">${escapeHtml(link.label)}</a>`).join('')}</div>
     </section>
     <section class="section">
       <div class="section-heading"><p class="eyebrow">Trip mood</p><h2>What this trip is about</h2></div>
@@ -698,7 +814,7 @@ function openItemsList(planning) {
   if (!items.length) {
     return '<p class="muted">No open items yet. Add a decision or task when something needs attention.</p>';
   }
-  return `<div class="attention-list">${items.map((item) => `<div><strong>${escapeHtml(item.title)}</strong>${statusPill(item.status)}</div>`).join('')}</div><a class="text-link" href="./more.html#decisions">Review decisions</a>`;
+  return `<div class="attention-list">${items.map((item) => `<div><strong>${escapeHtml(item.title)}</strong>${statusPill(item.status)}</div>`).join('')}</div><a class="text-link" href="${tripUrl('./more.html#decisions')}">Review decisions</a>`;
 }
 
 function editableHighlight(highlight, index, total) {
@@ -805,7 +921,7 @@ function renderMap() {
             <span>Stay</span>
             <span>Food</span>
           </div>
-          <a class="button primary" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trip.meta.destination)}" target="_blank" rel="noreferrer">Open Zakynthos in Maps</a>
+          <a class="button primary" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trip.meta.destination)}" target="_blank" rel="noreferrer">Open destination in Maps</a>
         </div>
       </div>
       <aside class="map-drawer">
@@ -999,8 +1115,8 @@ function ideasBoard() {
   const restaurants = sectionValue('restaurants');
   return `
     <div class="content-grid two">
-      ${card({ id: 'ideas-attractions', title: 'Activities and places', meta: `${attractions.length} ideas`, body: `<a class="text-link" href="./attractions.html">Open ideas page</a>` })}
-      ${card({ id: 'ideas-food', title: 'Food wishlist', meta: `${restaurants.length} food ideas`, body: `<a class="text-link" href="./food.html">Open food page</a>` })}
+      ${card({ id: 'ideas-attractions', title: 'Activities and places', meta: `${attractions.length} ideas`, body: `<a class="text-link" href="${tripUrl('./attractions.html')}">Open ideas page</a>` })}
+      ${card({ id: 'ideas-food', title: 'Food wishlist', meta: `${restaurants.length} food ideas`, body: `<a class="text-link" href="${tripUrl('./food.html')}">Open food page</a>` })}
     </div>
   `;
 }
@@ -1377,7 +1493,7 @@ function emptyState(title, text) {
 }
 
 function floatingAdd() {
-  const addPages = new Set(['home', 'itinerary', 'map', 'budget', 'more']);
+  const addPages = new Set(['trip', 'itinerary', 'map', 'budget', 'more']);
   if (!addPages.has(page)) {
     return '';
   }
@@ -1443,7 +1559,7 @@ function defaultItem(kind, currentItems) {
       label: `Day ${currentItems.length + 1}`,
       date: 'Editable date',
       isoDate: '',
-      destination: 'Zakynthos',
+      destination: trip.meta.destination,
       focus: 'Add the day focus.',
       mood: 'Flexible',
       balance: 'Balanced',
@@ -1453,15 +1569,15 @@ function defaultItem(kind, currentItems) {
   }
   if (kind === 'attraction') {
     const id = uniqueId('att', currentItems);
-    return { id, name: 'New idea', category: 'Idea', area: 'Zakynthos', status: 'Idea', summary: 'Add a short description.', bestFor: 'Add what this is best for.', locationId: trip.locations[0]?.id ?? '', image: '', mustDo: false };
+    return { id, name: 'New idea', category: 'Idea', area: trip.meta.destination, status: 'Idea', summary: 'Add a short description.', bestFor: 'Add what this is best for.', locationId: trip.locations[0]?.id ?? '', image: '', mustDo: false };
   }
   if (kind === 'restaurant') {
     const id = uniqueId('food', currentItems);
-    return { id, name: 'New restaurant', area: 'Zakynthos', status: 'Idea', cuisine: 'Greek', notes: 'Add booking or menu notes.', locationId: trip.locations[0]?.id ?? '', image: '', price: '', votes: 'Pending' };
+    return { id, name: 'New restaurant', area: trip.meta.destination, status: 'Idea', cuisine: 'Add cuisine', notes: 'Add booking or menu notes.', locationId: trip.locations[0]?.id ?? '', image: '', price: '', votes: 'Pending' };
   }
   if (kind === 'location') {
     const id = uniqueId('place', currentItems);
-    return { id, name: 'New place', area: 'Zakynthos', category: 'Place', mapQuery: 'Zakynthos Greece', notes: '', image: '', status: 'Idea' };
+    return { id, name: 'New place', area: trip.meta.destination, category: 'Place', mapQuery: trip.meta.destination, notes: '', image: '', status: 'Idea' };
   }
   if (kind === 'expense') {
     const id = uniqueId('expense', currentItems);
@@ -1538,13 +1654,13 @@ function addFromForm(form) {
   }
   if (kind === 'restaurant') {
     const restaurants = getSectionDraft('restaurants');
-    restaurants.push({ id: uniqueId('food', restaurants), name: title, area: 'Zakynthos', status, cuisine: 'Add cuisine', notes, locationId: form.locationId.value, image: '', price: '', votes: 'Pending' });
+    restaurants.push({ id: uniqueId('food', restaurants), name: title, area: trip.meta.destination, status, cuisine: 'Add cuisine', notes, locationId: form.locationId.value, image: '', price: '', votes: 'Pending' });
     saveDraft('restaurants');
     return 'restaurants';
   }
   if (kind === 'idea') {
     const attractions = getSectionDraft('attractions');
-    attractions.push({ id: uniqueId('att', attractions), name: title, category: 'Idea', area: 'Zakynthos', status, summary: notes || 'Add a short description.', bestFor: 'Add what this is best for.', locationId: form.locationId.value, image: '', mustDo: false });
+    attractions.push({ id: uniqueId('att', attractions), name: title, category: 'Idea', area: trip.meta.destination, status, summary: notes || 'Add a short description.', bestFor: 'Add what this is best for.', locationId: form.locationId.value, image: '', mustDo: false });
     saveDraft('attractions');
     return 'attractions';
   }
@@ -1609,7 +1725,7 @@ function setupFavorites() {
       const next = button.getAttribute('aria-pressed') !== 'true';
       button.disabled = true;
       try {
-        await setFavorite(favoriteId, next);
+        await setFavorite(trip.id, favoriteId, next);
         if (next) {
           trip.favorites = [{ targetId: favoriteId }, ...trip.favorites.filter((favorite) => favorite.targetId !== favoriteId)];
         } else {
@@ -1648,7 +1764,7 @@ function setupNotes() {
     box.querySelector('[data-note-save]')?.addEventListener('click', async () => {
       status.textContent = 'Saving...';
       try {
-        const saved = await saveNote({ id: box.dataset.noteId || undefined, targetId: box.dataset.noteBox, body: textarea.value });
+        const saved = await saveNote(trip.id, { id: box.dataset.noteId || undefined, targetId: box.dataset.noteBox, body: textarea.value });
         trip.notes = [saved, ...trip.notes.filter((note) => note.id !== saved.id && note.targetId !== saved.targetId)];
         box.dataset.noteId = saved.id;
         status.textContent = 'Saved.';
@@ -1660,7 +1776,7 @@ function setupNotes() {
     box.querySelector('[data-note-delete]')?.addEventListener('click', async () => {
       status.textContent = 'Deleting...';
       try {
-        await deleteNote(box.dataset.noteId);
+        await deleteNote(trip.id, box.dataset.noteId);
         trip.notes = trip.notes.filter((note) => note.id !== box.dataset.noteId);
         renderPage();
       } catch (error) {
@@ -1679,7 +1795,7 @@ function setupChecklist() {
       }
       checkbox.disabled = true;
       try {
-        await saveChecklistItem({ ...item, done: checkbox.checked });
+        await saveChecklistItem(trip.id, { ...item, done: checkbox.checked });
         item.done = checkbox.checked;
       } catch (error) {
         checkbox.checked = !checkbox.checked;
@@ -1694,7 +1810,7 @@ function setupChecklist() {
     button.addEventListener('click', async () => {
       button.disabled = true;
       try {
-        await deleteChecklistItem(button.dataset.checklistDelete);
+        await deleteChecklistItem(trip.id, button.dataset.checklistDelete);
         trip.checklistItems = trip.checklistItems.filter((item) => item.id !== button.dataset.checklistDelete);
         renderPage();
       } catch (error) {
@@ -1710,7 +1826,7 @@ function setupChecklist() {
     const status = form.querySelector('[data-checklist-status]');
     status.textContent = 'Saving...';
     try {
-      const saved = await saveChecklistItem({
+      const saved = await saveChecklistItem(trip.id, {
         text: form.text.value.trim(),
         status: form.status.value,
         done: false,
@@ -1820,7 +1936,7 @@ function setupInlineEditing() {
       button.disabled = true;
       setToolbarStatus(sectionKey, 'Saving...');
       try {
-        const saved = await saveSection(sectionKey, getSectionDraft(sectionKey), trip.versions[sectionKey]?.version);
+        const saved = await saveSection(trip.id, sectionKey, getSectionDraft(sectionKey), trip.versions[sectionKey]?.version);
         trip[sectionKey] = saved.value;
         trip.versions[sectionKey] = { version: saved.version, updatedAt: saved.updatedAt };
         clearDraft(sectionKey);
@@ -1902,6 +2018,87 @@ function setupAddFlow() {
   });
 }
 
+function tripPayloadFromForm(form) {
+  return {
+    title: form.title.value.trim(),
+    destination: form.destination.value.trim(),
+    startDate: form.startDate.value,
+    endDate: form.endDate.value,
+    travelers: form.travelers.value.trim(),
+    subtitle: form.subtitle.value.trim(),
+    mood: form.mood.value.split(',').map((item) => item.trim()).filter(Boolean),
+    coverImage: form.coverImage.value.trim()
+  };
+}
+
+function setupTripManagement() {
+  document.querySelector('[data-new-trip]')?.addEventListener('click', () => {
+    showTripForm = true;
+    editingTripId = '';
+    renderPortfolio();
+  });
+
+  document.querySelectorAll('[data-edit-trip]').forEach((button) => {
+    button.addEventListener('click', () => {
+      editingTripId = button.dataset.editTrip;
+      showTripForm = false;
+      renderPortfolio();
+    });
+  });
+
+  document.querySelectorAll('[data-cancel-trip-form]').forEach((button) => {
+    button.addEventListener('click', () => {
+      showTripForm = false;
+      editingTripId = '';
+      renderPortfolio();
+    });
+  });
+
+  document.querySelectorAll('[data-trip-form]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const tripId = form.dataset.tripForm;
+      const status = form.querySelector('[data-trip-form-status]');
+      status.textContent = tripId ? 'Saving...' : 'Creating...';
+      try {
+        const payload = tripPayloadFromForm(form);
+        if (tripId) {
+          await updateTrip(tripId, payload);
+          const refreshed = await loadTrips();
+          trips = refreshed.trips;
+          editingTripId = '';
+          renderPortfolio();
+        } else {
+          const result = await createTrip(payload);
+          window.location.href = tripUrl('./trip.html', result.trip.id);
+        }
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-delete-trip]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const tripId = button.dataset.deleteTrip;
+      const title = button.dataset.tripTitle;
+      const confirmation = window.prompt(`Type DELETE to remove "${title}" and its trip-scoped notes, favorites, and checklist items.`);
+      if (confirmation !== 'DELETE') {
+        return;
+      }
+      button.disabled = true;
+      try {
+        await removeTrip(tripId);
+        trips = trips.filter((summary) => summary.id !== tripId);
+        renderPortfolio();
+      } catch (error) {
+        window.alert(error.message);
+        button.disabled = false;
+      }
+    });
+  });
+}
+
 function setupBeforeUnload() {
   window.onbeforeunload = dirtyDrafts.size > 0
     ? () => 'There are unsaved trip edits on this device.'
@@ -1911,7 +2108,7 @@ function setupBeforeUnload() {
 function renderPage() {
   renderShell();
   const renderers = {
-    home: renderHome,
+    trip: renderHome,
     itinerary: renderItinerary,
     map: renderMap,
     budget: renderBudget,
@@ -1923,7 +2120,9 @@ function renderPage() {
     guide: renderGuide
   };
   renderers[page]?.();
-  main.insertAdjacentHTML('beforeend', floatingAdd());
+  if (workspacePages.has(page)) {
+    main.insertAdjacentHTML('beforeend', floatingAdd());
+  }
   document.querySelector('[data-print]')?.addEventListener('click', () => window.print());
   setupEditorChrome();
   setupFavorites();
@@ -1935,9 +2134,27 @@ function renderPage() {
 }
 
 async function boot() {
-  main.innerHTML = '<section class="page-header"><p class="eyebrow">Loading</p><h1>Opening shared planner...</h1></section>';
+  main.innerHTML = '<section class="page-header"><p class="eyebrow">Loading</p><h1>Opening planner...</h1></section>';
   try {
-    const payload = await loadTrip();
+    if (page === 'home') {
+      const payload = await loadTrips();
+      trips = payload.trips;
+      session = { authenticated: payload.authenticated, editor: payload.editor };
+      renderPortfolio();
+      return;
+    }
+
+    if (workspacePages.has(page) && !selectedTripId) {
+      session = await getSession();
+      renderShell();
+      main.innerHTML = `
+        ${pageHeader('Trip missing', 'Choose a trip first', 'Trip detail pages need a selected trip id.')}
+        <section class="empty-state"><h2>No trip selected</h2><p>Return to the trip portfolio and open one of the planned trips.</p><a class="button primary" href="${portfolioUrl()}">All trips</a></section>
+      `;
+      return;
+    }
+
+    const payload = await loadTrip(selectedTripId);
     trip = payload.trip;
     session = { authenticated: payload.authenticated, editor: payload.editor };
     renderPage();
@@ -1945,6 +2162,12 @@ async function boot() {
     if (error.status === 401) {
       session = { authenticated: false, editor: null };
       loginView();
+      return;
+    }
+    if (error.status === 404) {
+      session = await getSession().catch(() => ({ authenticated: false, editor: null }));
+      renderShell();
+      main.innerHTML = `${pageHeader('Trip not found', 'This trip does not exist', error.message)}<section class="empty-state"><a class="button primary" href="${portfolioUrl()}">All trips</a></section>`;
       return;
     }
     main.innerHTML = `${pageHeader('Error', 'Could not load trip data', error.message)}`;

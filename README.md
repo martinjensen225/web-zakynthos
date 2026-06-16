@@ -1,10 +1,13 @@
-# Zakynthos Together
+# TandemTrip
 
-Mobile-first shared trip planning app for Martin and Marta's September trip to Zakynthos, Greece. The app acts as a calm trip cockpit for daily plans, open decisions, saved ideas, budget, documents, packing, tasks, map links, and travel-day essentials.
+Mobile-first shared trip planning app for couples and small groups. The app has a trip portfolio for all planned trips and a selected-trip workspace for daily plans, open decisions, saved ideas, budget, documents, packing, tasks, map links, and travel-day essentials.
+
+Zakynthos remains the first seeded trip as `zakynthos-2026`.
 
 The primary app structure is:
 
-- Overview: trip hero, countdown, readiness, next action, open items, day preview, and quick actions.
+- All trips: portfolio cards for opening, creating, editing, and deleting trips.
+- Cockpit: trip hero, countdown, readiness, next action, open items, day preview, and quick actions.
 - Plan: day-by-day timeline cards for activities, transport, accommodation, meals, reminders, notes, and flexible time.
 - Map: saved places, trip layers, and Google Maps search links without a paid Maps API key.
 - Budget: target, estimates, confirmed costs, and expense cards.
@@ -48,7 +51,7 @@ npm run hash:editor -- martin "replace-with-password" "replace-with-random-salt"
 npx wrangler d1 migrations apply zakynthos-trip --local
 ```
 
-6. Seed the database from the current `content/*.json` files:
+6. Seed the database from the current `content/trips/*/*.json` files:
 
 ```powershell
 node scripts/create-seed.mjs | Set-Content -Encoding utf8 .\seed.local.sql
@@ -183,7 +186,7 @@ Do not commit real passwords, salts, generated hashes, or production `EDITOR_USE
 
 ### 5. Generate and apply seed SQL
 
-Generate seed SQL from the current `content/*.json` files:
+Generate seed SQL from the current `content/trips/*/*.json` files:
 
 ```powershell
 node scripts/create-seed.mjs | Set-Content -Encoding utf8 .\seed.local.sql
@@ -443,10 +446,29 @@ npx wrangler pages deploy
 
 ## Data Model
 
-- `trip_sections`: JSON sections for `meta`, `highlights`, `quickLinks`, `flights`, `stay`, `locations`, `itinerary`, `attractions`, `restaurants`, `planning`, and `duringTrip`.
-- `notes`: shared notes attached to page/card targets.
-- `favorites`: shared saved targets used by idea, food, map, stay, plan, and wallet cards.
-- `checklist_items`: shared checklist items and completion state.
+- `trip_sections`: one JSON section per trip id and section key for `meta`, `highlights`, `quickLinks`, `flights`, `stay`, `locations`, `itinerary`, `attractions`, `restaurants`, `planning`, and `duringTrip`.
+- `notes`: shared notes attached to page/card targets inside one trip.
+- `favorites`: shared saved targets used by idea, food, map, stay, plan, and wallet cards inside one trip.
+- `checklist_items`: shared checklist items and completion state inside one trip.
+
+Source seed content is grouped by trip:
+
+```text
+content/
+  trips/
+    zakynthos-2026/
+      meta.json
+      highlights.json
+      quick-links.json
+      flights.json
+      stay.json
+      locations.json
+      itinerary.json
+      attractions.json
+      restaurants.json
+      planning.json
+      during-trip.json
+```
 
 The `itinerary` section stores day objects with timeline `items`. Each item can represent an activity, transport, accommodation, meal, reminder, task, note, or free-time block.
 
@@ -461,7 +483,7 @@ The `planning` section stores the MVP collaboration tools:
 
 Document entries are manual records only. The app does not upload, store, or serve document files yet.
 
-The original `content/*.json` files are seed data. Runtime edits are saved in D1 and are not written back to source files.
+The original `content/trips/*/*.json` files are seed data. Runtime edits are saved in D1 and are not written back to source files.
 
 ## Website Editing
 
@@ -473,7 +495,7 @@ Places are connected with clickable chips that show normal place names, such as 
 
 Card and list sections support add, delete, move up, move down, and drag-and-drop reordering where the order matters. This covers highlights, quick links, itinerary days, itinerary items, places, ideas, restaurants, decisions, expenses, document records, packing items, tasks, and travel-wallet items.
 
-Each section is saved as a D1-backed `trip_sections` record. The client keeps an unsaved draft in browser `localStorage` only until the editor saves or resets that section. Saved changes are loaded from D1 by all users and devices through `/api/trip`.
+Each section is saved as a D1-backed `trip_sections` record scoped by trip id. The client keeps an unsaved draft in browser `localStorage` only until the editor saves or resets that section. Draft keys include the trip id, and saved changes are loaded from D1 by all users and devices through the selected trip endpoint.
 
 Notes, favorites, and the visible planning checklist use dedicated API endpoints and tables because they are edited frequently while planning or traveling. They are not stored in browser-only state.
 
@@ -486,11 +508,15 @@ Editing is intended to be no-code. The website does not expose the raw JSON edit
 - `GET /api/session`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
-- `GET /api/trip`
-- `PATCH /api/trip/sections/:sectionKey`
-- `POST /api/notes`, `PUT /api/notes/:id`, `DELETE /api/notes/:id`
-- `PUT /api/favorites/:targetId`, `DELETE /api/favorites/:targetId`
-- `POST /api/checklist-items`, `PUT /api/checklist-items/:id`, `DELETE /api/checklist-items/:id`
+- `GET /api/trips`
+- `POST /api/trips`
+- `GET /api/trips/:tripId`
+- `PATCH /api/trips/:tripId`
+- `DELETE /api/trips/:tripId`
+- `PATCH /api/trips/:tripId/sections/:sectionKey`
+- `POST /api/trips/:tripId/notes`, `PUT /api/trips/:tripId/notes/:id`, `DELETE /api/trips/:tripId/notes/:id`
+- `PUT /api/trips/:tripId/favorites/:targetId`, `DELETE /api/trips/:tripId/favorites/:targetId`
+- `POST /api/trips/:tripId/checklist-items`, `PUT /api/trips/:tripId/checklist-items/:id`, `DELETE /api/trips/:tripId/checklist-items/:id`
 
 Write operations require an editor session. By default, reads are private too. Set `PUBLIC_READ=true` only when the trip guide should be visible to visitors without login.
 

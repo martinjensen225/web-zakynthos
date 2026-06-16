@@ -2,8 +2,8 @@
 
 ## Snapshot (≤ 25 lines)
 - Goal: Convert the Zakynthos guide into a shared editable trip-planning web app. (2026-06-10) [USER]
-- Now: TripTogether-style mobile shell, Cockpit/Plan/Map/Budget/More IA, structured timeline cards, planning tools, floating Add, and refreshed styling are staged in the working tree. (2026-06-11) [CODE]
-- Next: Apply updated seed data to D1 after review, configure Cloudflare runtime secrets/bindings if not already done, then push `main` to deploy Pages automatically. (2026-06-11) [CODE]
+- Now: Multi-trip portfolio/workspace implementation is staged: `/index.html` lists trips, `/trip.html?trip=:tripId` opens Cockpit, workspace links preserve `trip`, and trip CRUD is available to signed-in editors. (2026-06-16) [CODE]
+- Next: Run npm validation after Node/npm are available on PATH, apply updated seed data to D1 after review, configure Cloudflare runtime secrets/bindings if not already done, then push `main` to deploy Pages automatically. (2026-06-16) [CODE]
 - Open Questions: Cloudflare account/project secret values, editor users, and public-read setting are UNCONFIRMED. (2026-06-11) [USER]
 
 ## Decisions
@@ -62,3 +62,5 @@
 - 2026-06-11T09:16+02:00 [TOOL] `npm run lint`, `node --check assets/app.js`, `npm run test`, `npm run build`, and `git diff --check` passed after inline card editing update; diff check only reported CRLF normalization warnings.
 - 2026-06-11T09:55+02:00 [TOOL] `npm run lint`, `node --check assets/app.js`, `npm run test`, `npm run build`, and `git diff --check` passed after same-card editing and clickable mapping update; diff check only reported CRLF normalization warnings.
 - 2026-06-11T10:45+02:00 [TOOL] `npm run lint`, `node --check assets/app.js`, `node --check functions/_lib/validation.js`, `npm run test`, `npm run build`, `git diff --check`, and `npm run seed:sql > $null` passed after TripTogether redesign; Wrangler was not installed locally for Pages Functions runtime verification.
+- 2026-06-16T11:05+02:00 [CODE] Added multi-trip content layout, trip-aware API routes, selected-trip navigation, portfolio trip CRUD, and trip-scoped drafts/notes/favorites/checklist writes.
+- 2026-06-16T11:05+02:00 [TOOL] `npm install`, `npm run lint`, `npm run test`, `npm run build`, and `node --check ...` could not start because `npm`/`node` were not on PATH; `git diff --check` passed with CRLF normalization warnings only.

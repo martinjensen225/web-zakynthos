@@ -6,7 +6,7 @@ await import('./validate.mjs');
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
-const entries = ['assets', 'data', 'public', 'index.html', 'itinerary.html', 'map.html', 'budget.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
+const entries = ['assets', 'data', 'public', 'index.html', 'trip.html', 'itinerary.html', 'map.html', 'budget.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
 
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
