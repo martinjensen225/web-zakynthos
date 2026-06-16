@@ -34,7 +34,7 @@ const quickPages = [
   ['./attractions.html', 'Ideas board'],
   ['./planning.html', 'Tasks and packing']
 ];
-const workspacePages = new Set(['trip', 'itinerary', 'map', 'budget', 'more', 'attractions', 'stay', 'food', 'guide', 'planning']);
+const workspacePages = new Set(['trip', 'itinerary', 'map', 'more', 'attractions', 'stay', 'food', 'guide', 'planning']);
 const secondaryPageNames = new Set(['attractions', 'stay', 'food', 'guide', 'planning']);
 const urlParams = new URLSearchParams(window.location.search);
 const selectedTripId = urlParams.get('trip') || '';
@@ -1396,7 +1396,7 @@ function emptyState(title, text) {
 }
 
 function floatingAdd() {
-  const addPages = new Set(['trip', 'itinerary', 'map', 'budget', 'more']);
+  const addPages = new Set(['trip', 'itinerary', 'map', 'more']);
   if (!addPages.has(page)) {
     return '';
   }

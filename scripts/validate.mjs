@@ -73,7 +73,9 @@ async function validateTripContent(tripId) {
   assert(Array.isArray(planning.decisions), `${tripId}: planning.decisions must be an array.`);
   assert(Array.isArray(planning.tasks), `${tripId}: planning.tasks must be an array.`);
   assert(Array.isArray(planning.packing), `${tripId}: planning.packing must be an array.`);
-  assert(Array.isArray(planning.budget.expenses), `${tripId}: planning.budget.expenses must be an array.`);
+  if (planning.budget !== undefined) {
+    assert(Array.isArray(planning.budget.expenses ?? []), `${tripId}: planning.budget.expenses must be an array.`);
+  }
   assert(Array.isArray(planning.documents), `${tripId}: planning.documents must be an array.`);
   assert(Array.isArray(duringTrip.emergency), `${tripId}: duringTrip.emergency must be an array.`);
 

@@ -102,7 +102,6 @@ function blankTripSections(meta, tripId = 'trip') {
     quickLinks: [
       { label: 'Plan timeline', href: './itinerary.html' },
       { label: 'Saved places', href: './map.html' },
-      { label: 'Budget', href: './budget.html' },
       { label: 'Travel wallet', href: './guide.html' }
     ],
     flights: {
