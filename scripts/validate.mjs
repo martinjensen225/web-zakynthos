@@ -147,7 +147,6 @@ assert(app.includes('renderPortfolio'), 'The app must render an all-trips portfo
 assert(app.includes('setupTripManagement'), 'The portfolio must support creating, editing, and deleting trips.');
 assert(app.includes('setupInlineEditing'), 'Editor mode must edit the visible trip cards inline.');
 assert(app.includes('floatingAdd'), 'Primary planning screens must expose a floating Add control.');
-assert(app.includes('renderBudget'), 'The app must render a Budget section.');
 assert(app.includes('renderMore'), 'The app must render More tools for ideas, decisions, documents, packing, and tasks.');
 assert(app.includes('data-add-path'), 'Editor mode must support adding section items.');
 assert(app.includes('data-remove-path'), 'Editor mode must support removing section items.');

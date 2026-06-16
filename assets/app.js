@@ -21,14 +21,12 @@ const primaryNav = [
   ['trip.html', 'Cockpit'],
   ['itinerary.html', 'Plan'],
   ['map.html', 'Map'],
-  ['budget.html', 'Budget'],
   ['more.html', 'More']
 ];
 const quickPages = [
   ['./trip.html', 'Cockpit'],
   ['./itinerary.html', 'Plan timeline'],
   ['./map.html', 'Map'],
-  ['./budget.html', 'Budget'],
   ['./more.html', 'More'],
   ['./stay.html', 'Stay details'],
   ['./guide.html', 'Travel wallet'],
@@ -44,7 +42,6 @@ const periodChoices = ['Morning', 'Afternoon', 'Evening', 'Flexible'];
 const statusChoices = ['Idea', 'Suggested', 'Discussing', 'Planned', 'Booked', 'Confirmed', 'Cancelled', 'Needs attention'];
 const decisionStatuses = ['Needs vote', 'Waiting for partner', 'Tie', 'Recommended match', 'Decided', 'Archived', 'Discussing'];
 const taskStatuses = ['To do', 'In progress', 'Waiting', 'Done', 'Needs attention'];
-const expenseStatuses = ['Needs estimate', 'Estimate', 'Confirmed cost', 'Paid', 'Reimbursement'];
 const documentStatuses = ['Missing', 'Added manually', 'Confirmed', 'Not needed yet'];
 const planTypes = ['Activity', 'Transport', 'Accommodation', 'Meal', 'Restaurant', 'Reminder', 'Task', 'Note', 'Free time'];
 
@@ -138,8 +135,6 @@ function normalizeDraft(sectionKey, draft) {
   if (sectionKey === 'planning') {
     draft.decisions ??= [];
     draft.tasks ??= [];
-    draft.budget ??= { currency: 'EUR', target: 0, comfort: '', notes: '', expenses: [] };
-    draft.budget.expenses ??= [];
     draft.documents ??= [];
     draft.packing = (draft.packing ?? []).map((item, index) => typeof item === 'string'
       ? { id: `pack-${index + 1}`, text: item, owner: 'Shared', category: 'Packing', essential: false, packed: false }
@@ -293,14 +288,6 @@ function daysUntil(meta = trip.meta) {
     return 'Trip starts today';
   }
   return 'Trip dates are in the past';
-}
-
-function formatMoney(amount, currency = 'EUR') {
-  const numeric = Number(amount);
-  if (!Number.isFinite(numeric) || numeric <= 0) {
-    return 'Missing estimate';
-  }
-  return `${currency} ${numeric.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
 }
 
 function list(items, className = 'plain-list') {
@@ -498,7 +485,6 @@ function pageTitle() {
     trip: 'Cockpit',
     itinerary: 'Plan',
     map: 'Map',
-    budget: 'Budget',
     more: 'More',
     attractions: 'Ideas',
     stay: 'Stay',
@@ -600,7 +586,6 @@ function editablePlanItem(item, dayIndex, itemIndex, total) {
 function readinessSummary(meta, itinerary, planning, stay, duringTrip) {
   const items = allPlanItems(itinerary);
   const documents = planning.documents ?? [];
-  const expenses = planning.budget?.expenses ?? [];
   const tasks = planning.tasks ?? [];
   const packing = planning.packing ?? [];
   const checks = [
@@ -609,7 +594,6 @@ function readinessSummary(meta, itinerary, planning, stay, duringTrip) {
     { label: 'Transport', done: items.some((item) => item.type === 'Transport' && ['Booked', 'Confirmed'].includes(normalizeStatus(item.status))), detail: 'Flights and transfers need details' },
     { label: 'Documents', done: documents.some((document) => normalizeStatus(document.status) === 'Confirmed'), detail: `${documents.filter((document) => document.important).length} important records` },
     { label: 'Daily plan', done: itinerary.length > 0 && items.length >= itinerary.length * 2, detail: `${items.length} plan cards` },
-    { label: 'Budget', done: expenses.some((expense) => Number(expense.amount) > 0), detail: `${expenses.length} expense cards` },
     { label: 'Packing', done: packing.length > 0, detail: `${packing.length} packing items` },
     { label: 'Emergency info', done: (duringTrip.emergency ?? []).some((item) => !item.toLowerCase().includes('add')), detail: 'Travel wallet needs final numbers' }
   ];
@@ -974,89 +958,8 @@ function editableLocation(location, index, total) {
   });
 }
 
-function renderBudget() {
-  const planning = sectionValue('planning');
-  const budget = planning.budget ?? { currency: 'EUR', target: 0, expenses: [] };
-  const expenses = budget.expenses ?? [];
-  const confirmed = expenses.filter((expense) => ['Confirmed cost', 'Paid'].includes(expense.status)).reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-  const estimated = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
-  const remaining = Math.max(0, Number(budget.target || 0) - estimated);
-  main.innerHTML = `
-    ${editorBar()}
-    ${pageHeader('Shared money', 'Budget', 'A calm budget view with estimates, confirmed costs, paid items, and missing numbers.')}
-    ${sectionToolbar('planning', 'Budget and expenses', 'expense', ['budget', 'expenses'])}
-    <section class="budget-summary">
-      ${statCard('Target', formatMoney(budget.target, budget.currency))}
-      ${statCard('Estimated', formatMoney(estimated, budget.currency))}
-      ${statCard('Confirmed', formatMoney(confirmed, budget.currency))}
-      ${statCard('Remaining target', formatMoney(remaining, budget.currency))}
-    </section>
-    ${editMode && session.authenticated ? editableBudget(budget) : card({ id: 'comfort-budget', title: 'Comfort budget', meta: budget.comfort ?? 'Set comfort level', body: `<p>${escapeHtml(budget.notes ?? 'Add budget notes together.')}</p>` })}
-    <section class="content-grid two editable-list">
-      ${expenses.length ? expenses.map((expense, index) => editMode && session.authenticated ? editableExpense(expense, index, expenses.length) : expenseCard(expense, budget.currency)).join('') : emptyState('No expenses yet', 'Add flight, stay, food, transport, and activity estimates.')}
-    </section>
-  `;
-}
-
 function statCard(label, value) {
   return `<article class="stat-card"><p>${escapeHtml(label)}</p><strong>${escapeHtml(value)}</strong></article>`;
-}
-
-function editableBudget(budget) {
-  return card({
-    id: 'comfort-budget',
-    title: 'Budget settings',
-    body: `
-      <div class="inline-edit-form">
-        <div class="editor-grid compact">
-          ${editField('planning', ['budget', 'currency'], 'Currency', budget.currency ?? 'EUR')}
-          ${editField('planning', ['budget', 'target'], 'Target', budget.target ?? 0, { type: 'number' })}
-        </div>
-        ${editField('planning', ['budget', 'comfort'], 'Comfort budget', budget.comfort ?? '')}
-        ${editField('planning', ['budget', 'notes'], 'Notes', budget.notes ?? '', { type: 'textarea', rows: 2 })}
-      </div>
-    `
-  });
-}
-
-function expenseCard(expense, fallbackCurrency) {
-  return card({
-    id: expense.id,
-    title: expense.title,
-    meta: `${expense.category ?? 'Expense'} · ${formatMoney(expense.amount, expense.currency ?? fallbackCurrency)}`,
-    body: `
-      <div class="card-chip-row">${statusPill(expense.status)}<span class="soft-chip">Paid by ${escapeHtml(expense.paidBy ?? 'TBD')}</span></div>
-      <p>${escapeHtml(expense.notes ?? '')}</p>
-      <dl class="details-list compact"><div><dt>Split</dt><dd>${escapeHtml(expense.splitBetween ?? 'TBD')}</dd></div><div><dt>Linked item</dt><dd>${escapeHtml(expense.linkedItemId ?? 'None yet')}</dd></div></dl>
-    `
-  });
-}
-
-function editableExpense(expense, index, total) {
-  const path = ['budget', 'expenses', index];
-  return card({
-    id: expense.id,
-    title: expense.title,
-    body: `
-      <div class="same-card-editor">
-        ${editField('planning', [...path, 'title'], 'Title', expense.title, { inline: true, hideLabel: true })}
-        <div class="editor-grid compact">
-          ${editField('planning', [...path, 'amount'], 'Amount', expense.amount ?? 0, { type: 'number' })}
-          ${editField('planning', [...path, 'currency'], 'Currency', expense.currency ?? 'EUR')}
-          ${editField('planning', [...path, 'category'], 'Category', expense.category ?? '')}
-          ${editSelect('planning', [...path, 'status'], 'Status', expense.status ?? 'Estimate', expenseStatuses)}
-        </div>
-        <div class="editor-grid compact">
-          ${editField('planning', [...path, 'paidBy'], 'Paid by', expense.paidBy ?? '')}
-          ${editField('planning', [...path, 'splitBetween'], 'Split between', expense.splitBetween ?? '')}
-        </div>
-        ${editField('planning', [...path, 'linkedItemId'], 'Linked item id', expense.linkedItemId ?? '')}
-        ${editField('planning', [...path, 'notes'], 'Notes', expense.notes ?? '', { type: 'textarea', rows: 2 })}
-        ${editActions('planning', ['budget', 'expenses'], index, total)}
-      </div>
-    `,
-    editAttrs: editableItemAttrs('planning', ['budget', 'expenses'], index)
-  });
 }
 
 function renderMore() {
@@ -1519,7 +1422,6 @@ function addPanel() {
           <option value="accommodation">Accommodation</option>
           <option value="restaurant">Restaurant</option>
           <option value="idea">Idea</option>
-          <option value="expense">Expense</option>
           <option value="task">Task</option>
           <option value="document">Document</option>
           <option value="note">Note</option>
@@ -1532,7 +1434,6 @@ function addPanel() {
         <label><span>Location</span><select name="locationId"><option value="">Add later</option>${locations.map((location) => `<option value="${escapeHtml(location.id)}">${escapeHtml(location.name)}</option>`).join('')}</select></label>
         <label><span>Notes</span><textarea name="notes" rows="3" placeholder="Optional details"></textarea></label>
         <div class="editor-grid compact">
-          <label><span>Amount</span><input name="amount" type="number" min="0" step="1" placeholder="For expenses"></label>
           <label><span>Status</span><select name="status">${statusChoices.map((status) => `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`).join('')}</select></label>
         </div>
         <div class="mini-actions">
@@ -1665,11 +1566,6 @@ function addFromForm(form) {
     return 'attractions';
   }
   const planning = getSectionDraft('planning');
-  if (kind === 'expense') {
-    planning.budget ??= { currency: 'EUR', target: 0, expenses: [] };
-    planning.budget.expenses ??= [];
-    planning.budget.expenses.push({ id: uniqueId('expense', planning.budget.expenses), title, amount: Number(form.amount.value || 0), currency: planning.budget.currency ?? 'EUR', category: 'Trip', paidBy: 'TBD', splitBetween: 'Martin and Marta', status: 'Estimate', linkedItemId: '', notes });
-  }
   if (kind === 'task') {
     planning.tasks ??= [];
     planning.tasks.push({ id: uniqueId('task', planning.tasks), title, assignee: 'Shared', dueDate: '', priority: 'Medium', status: 'To do', linkedItemId: '', notes });
@@ -2111,7 +2007,6 @@ function renderPage() {
     trip: renderHome,
     itinerary: renderItinerary,
     map: renderMap,
-    budget: renderBudget,
     more: renderMore,
     attractions: renderAttractions,
     stay: renderStay,

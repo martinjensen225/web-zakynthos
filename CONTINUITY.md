@@ -23,7 +23,8 @@
 - 2026-06-11 [CODE] Replaced raw JSON-first editing with structured add/update/remove controls, refreshed dashboard styling, tightened section/full-trip validation, and documented website editing.
 - 2026-06-11 [CODE] Replaced under-page editor panels with inline editing on the visible cards, including add/delete/move/drag controls and optional image fields.
 - 2026-06-11 [CODE] Refined edit mode so cards keep their normal layout while editing, itinerary time blocks remain side-by-side, places use clickable chips, and quick links use page choices instead of paths.
-- 2026-06-11 [CODE] Reworked the app toward the TripTogether MVP with Cockpit/Plan/Map/Budget/More navigation, structured itinerary items, decisions, budget, document records, packing, tasks, travel wallet, and mobile-first styling.
+- 2026-06-11 [CODE] Reworked the app toward the TripTogether MVP with Cockpit/Plan/Map/More navigation, structured itinerary items, decisions, document records, packing, tasks, travel wallet, and mobile-first styling.
+- 2026-06-11 [CODE] Removed the Budget tab/page and the related expense model from the TripTogether shell, leaving Cockpit/Plan/Map/More as the primary navigation.
 
 ## Working set (≤ 12 paths)
 - README.md
@@ -36,7 +37,6 @@
 - migrations/
 - assets/app.js
 - assets/styles.css
-- budget.html
 - more.html
 - scripts/
 - wrangler.toml

@@ -67,19 +67,6 @@
     { "id": "pack-day-bag", "text": "Small day bag", "owner": "Shared", "category": "Daily", "essential": false, "packed": false },
     { "id": "pack-medicine", "text": "Medication and basic first aid", "owner": "Shared", "category": "Health", "essential": true, "packed": false }
   ],
-  "budget": {
-    "currency": "EUR",
-    "target": 1800,
-    "comfort": "Comfortable with a few treats",
-    "notes": "Replace placeholders with booked totals as decisions firm up.",
-    "expenses": [
-      { "id": "expense-flights", "title": "Flights", "amount": 0, "currency": "EUR", "category": "Transport", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Needs estimate", "linkedItemId": "item-outbound-flight", "notes": "Add total after booking." },
-      { "id": "expense-stay", "title": "Stay", "amount": 0, "currency": "EUR", "category": "Accommodation", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Needs estimate", "linkedItemId": "item-checkout", "notes": "Add hotel or apartment total." },
-      { "id": "expense-food", "title": "Food estimate", "amount": 560, "currency": "EUR", "category": "Food", "paidBy": "Shared", "splitBetween": "Martin and Marta", "status": "Estimate", "linkedItemId": "item-romantic-dinner", "notes": "Placeholder for casual meals and one booked dinner." },
-      { "id": "expense-boat", "title": "Boat trip estimate", "amount": 160, "currency": "EUR", "category": "Activity", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Estimate", "linkedItemId": "item-blue-caves", "notes": "Confirm once operator is chosen." },
-      { "id": "expense-car", "title": "Transport or rental car", "amount": 220, "currency": "EUR", "category": "Transport", "paidBy": "TBD", "splitBetween": "Martin and Marta", "status": "Estimate", "linkedItemId": "decision-car", "notes": "Depends on rental car decision." }
-    ]
-  },
   "documents": [
     { "id": "doc-flight-out", "title": "Outbound flight confirmation", "type": "Flight confirmation", "status": "Missing", "linkedItemId": "item-outbound-flight", "important": true, "offline": false, "reference": "", "notes": "File upload is not enabled yet; add manual booking details here." },
     { "id": "doc-stay", "title": "Hotel booking", "type": "Hotel booking", "status": "Missing", "linkedItemId": "item-checkout", "important": true, "offline": false, "reference": "", "notes": "Add booking reference after hotel is chosen." },
