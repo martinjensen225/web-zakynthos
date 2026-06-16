@@ -1,13 +1,12 @@
 # Zakynthos Together
 
-Mobile-first shared trip planning app for Martin and Marta's September trip to Zakynthos, Greece. The app acts as a calm trip cockpit for daily plans, open decisions, saved ideas, budget, documents, packing, tasks, map links, and travel-day essentials.
+Mobile-first shared trip planning app for Martin and Marta's September trip to Zakynthos, Greece. The app acts as a calm trip cockpit for daily plans, open decisions, saved ideas, documents, packing, tasks, map links, and travel-day essentials.
 
 The primary app structure is:
 
 - Overview: trip hero, countdown, readiness, next action, open items, day preview, and quick actions.
 - Plan: day-by-day timeline cards for activities, transport, accommodation, meals, reminders, notes, and flexible time.
 - Map: saved places, trip layers, and Google Maps search links without a paid Maps API key.
-- Budget: target, estimates, confirmed costs, and expense cards.
 - More: ideas, decisions, document records, packing, tasks, stay details, and travel wallet.
 
 ## Tech Stack
@@ -455,7 +454,6 @@ The `planning` section stores the MVP collaboration tools:
 - `decisions`
 - `tasks`
 - `packing`
-- `budget`
 - `documents`
 - `openQuestions`
 
@@ -471,7 +469,7 @@ The primary planning screens include a floating Add button. Added items are save
 
 Places are connected with clickable chips that show normal place names, such as `Hotel`, `Blue Caves`, or `Zakynthos Town`. Editors do not need to know or type internal location IDs for normal map/place edits. Quick links use a page picker for the app's normal pages instead of requiring file paths.
 
-Card and list sections support add, delete, move up, move down, and drag-and-drop reordering where the order matters. This covers highlights, quick links, itinerary days, itinerary items, places, ideas, restaurants, decisions, expenses, document records, packing items, tasks, and travel-wallet items.
+Card and list sections support add, delete, move up, move down, and drag-and-drop reordering where the order matters. This covers highlights, quick links, itinerary days, itinerary items, places, ideas, restaurants, decisions, document records, packing items, tasks, and travel-wallet items.
 
 Each section is saved as a D1-backed `trip_sections` record. The client keeps an unsaved draft in browser `localStorage` only until the editor saves or resets that section. Saved changes are loaded from D1 by all users and devices through `/api/trip`.
 

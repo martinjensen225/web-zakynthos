@@ -2,7 +2,7 @@
 
 ## Snapshot (≤ 25 lines)
 - Goal: Convert the Zakynthos guide into a shared editable trip-planning web app. (2026-06-10) [USER]
-- Now: TripTogether-style mobile shell, Cockpit/Plan/Map/Budget/More IA, structured timeline cards, planning tools, floating Add, and refreshed styling are staged in the working tree. (2026-06-11) [CODE]
+- Now: TripTogether-style mobile shell, Cockpit/Plan/Map/More IA, structured timeline cards, planning tools, floating Add, and refreshed styling are staged in the working tree. (2026-06-11) [CODE]
 - Next: Apply updated seed data to D1 after review, configure Cloudflare runtime secrets/bindings if not already done, then push `main` to deploy Pages automatically. (2026-06-11) [CODE]
 - Open Questions: Cloudflare account/project secret values, editor users, and public-read setting are UNCONFIRMED. (2026-06-11) [USER]
 
@@ -23,7 +23,8 @@
 - 2026-06-11 [CODE] Replaced raw JSON-first editing with structured add/update/remove controls, refreshed dashboard styling, tightened section/full-trip validation, and documented website editing.
 - 2026-06-11 [CODE] Replaced under-page editor panels with inline editing on the visible cards, including add/delete/move/drag controls and optional image fields.
 - 2026-06-11 [CODE] Refined edit mode so cards keep their normal layout while editing, itinerary time blocks remain side-by-side, places use clickable chips, and quick links use page choices instead of paths.
-- 2026-06-11 [CODE] Reworked the app toward the TripTogether MVP with Cockpit/Plan/Map/Budget/More navigation, structured itinerary items, decisions, budget, document records, packing, tasks, travel wallet, and mobile-first styling.
+- 2026-06-11 [CODE] Reworked the app toward the TripTogether MVP with Cockpit/Plan/Map/More navigation, structured itinerary items, decisions, document records, packing, tasks, travel wallet, and mobile-first styling.
+- 2026-06-11 [CODE] Removed the Budget tab/page and the related expense model from the TripTogether shell, leaving Cockpit/Plan/Map/More as the primary navigation.
 
 ## Working set (≤ 12 paths)
 - README.md
@@ -36,7 +37,6 @@
 - migrations/
 - assets/app.js
 - assets/styles.css
-- budget.html
 - more.html
 - scripts/
 - wrangler.toml

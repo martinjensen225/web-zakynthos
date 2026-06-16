@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { validateFullTrip } from '../functions/_lib/validation.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const requiredPages = ['index.html', 'itinerary.html', 'map.html', 'budget.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
+const requiredPages = ['index.html', 'itinerary.html', 'map.html', 'more.html', 'attractions.html', 'stay.html', 'food.html', 'planning.html', 'guide.html'];
 const contentFiles = [
   'meta.json',
   'highlights.json',
@@ -80,7 +80,6 @@ assert(Array.isArray(planning.checklist), 'planning.checklist must be an array.'
 assert(Array.isArray(planning.decisions), 'planning.decisions must be an array.');
 assert(Array.isArray(planning.tasks), 'planning.tasks must be an array.');
 assert(Array.isArray(planning.packing), 'planning.packing must be an array.');
-assert(Array.isArray(planning.budget.expenses), 'planning.budget.expenses must be an array.');
 assert(Array.isArray(planning.documents), 'planning.documents must be an array.');
 assert(Array.isArray(duringTrip.emergency), 'duringTrip.emergency must be an array.');
 
@@ -132,7 +131,6 @@ assert(!app.includes('zakynthos:notes'), 'Notes must not use local-only storage.
 assert(!app.includes('zakynthos:checks'), 'Checklist state must not use local-only storage.');
 assert(app.includes('setupInlineEditing'), 'Editor mode must edit the visible trip cards inline.');
 assert(app.includes('floatingAdd'), 'Primary planning screens must expose a floating Add control.');
-assert(app.includes('renderBudget'), 'The app must render a Budget section.');
 assert(app.includes('renderMore'), 'The app must render More tools for ideas, decisions, documents, packing, and tasks.');
 assert(app.includes('data-add-path'), 'Editor mode must support adding section items.');
 assert(app.includes('data-remove-path'), 'Editor mode must support removing section items.');
