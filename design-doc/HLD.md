@@ -286,6 +286,218 @@ Secondary tools:
 
 On desktop, these can become full sidebar sections.
 
+## 6.6 Trip portfolio and trip selection
+
+The information architecture has two levels:
+
+* **Trip portfolio**: the home page for seeing all planned trips.
+* **Trip workspace**: the Cockpit, Plan, Map, Decide, More, Ideas, Budget, Documents, Packing, Tasks, Travel Wallet, and other detail screens for one trip.
+
+The trip workspace is the full planning experience. The trip portfolio is a lightweight selector and cross-trip dashboard.
+
+### Portfolio purpose
+
+The trip portfolio helps users answer:
+
+* What trips are planned?
+* Which trip needs attention?
+* Which trip should be opened now?
+* What is the high-level status of each trip?
+
+The portfolio does not replace the Trip Cockpit. It sits above the Cockpit and links users into the selected trip.
+
+### User flow: view all trips
+
+1. Open the website home page.
+2. See all planned trips as trip cards.
+3. Scan each trip's destination, dates, travellers, cover image, mood or status, and planning state.
+4. Open a trip from its card.
+
+The all-trips page is primarily a selector. Trip creation, duplication, archiving, and deletion are separate product capabilities that can be added without changing the trip workspace design.
+
+### User flow: select a trip
+
+1. Choose a trip card from the all-trips page.
+2. The app opens that trip using its stable trip id.
+3. The selected trip id is preserved while navigating between trip-detail screens.
+4. The user can return to the all-trips page from the brand/home link or a clear "All trips" navigation affordance.
+
+### User flow: view trip details
+
+Inside a trip, the trip workspace uses the screen designs in this document:
+
+* Cockpit shows the hero trip card, next action, readiness, open decisions, and day preview.
+* Plan shows the day-by-day itinerary.
+* Map shows saved places and map links.
+* Decide shows shared decisions, voting, comparisons, and unresolved choices.
+* More gives access to ideas, decisions, documents, packing, tasks, memories, and settings.
+* Budget, stay, food, planning, and travel-wallet views show the selected trip's own data.
+
+The selected trip is a complete planning workspace, not a reduced summary.
+
+### User flow: edit, add, and remove trip content
+
+Where editing is available, it applies inside the selected trip workspace:
+
+* Signed-in editors can edit visible trip cards.
+* Editors can add, update, remove, move, and reorder supported items.
+* Editors can save section drafts to shared storage.
+* Editors can add notes, favorites, and checklist items.
+* Unsaved drafts remain local until saved or reset.
+
+All edits are scoped to the selected trip. Editing one trip must not change another trip's sections, notes, favorites, or checklist items.
+
+### Route and navigation structure
+
+The app uses static page shells and a selected-trip query parameter.
+
+Recommended routes:
+
+| Route | Purpose |
+| --- | --- |
+| `/index.html` | All-trips overview. |
+| `/trip.html?trip=:tripId` | Selected-trip Cockpit. |
+| `/itinerary.html?trip=:tripId` | Selected-trip Plan. |
+| `/map.html?trip=:tripId` | Selected-trip Map. |
+| `/budget.html?trip=:tripId` | Selected-trip Budget. |
+| `/more.html?trip=:tripId` | Selected-trip More tools. |
+| `/attractions.html?trip=:tripId` | Selected-trip Ideas Board. |
+| `/food.html?trip=:tripId` | Selected-trip Food ideas. |
+| `/stay.html?trip=:tripId` | Selected-trip Stay and flights. |
+| `/planning.html?trip=:tripId` | Selected-trip tasks, packing, documents, and decisions. |
+| `/guide.html?trip=:tripId` | Selected-trip Travel Wallet. |
+
+The brand link returns to `/index.html`. Trip-detail navigation links and quick links preserve the selected `trip` value.
+
+If no trip is selected on a trip-detail page, the app shows a clear state that links back to the all-trips overview. If an unknown trip id is requested, the app shows a not-found state.
+
+### Data and content model
+
+The app has a trip collection layer above the trip sections.
+
+Each trip has a stable id and a set of section documents:
+
+* `meta`
+* `highlights`
+* `quickLinks`
+* `flights`
+* `stay`
+* `locations`
+* `itinerary`
+* `attractions`
+* `restaurants`
+* `planning`
+* `duringTrip`
+
+The trip overview is generated from each trip's `meta` section plus lightweight planning signals such as dates, status, open decisions, readiness, and last update time.
+
+Recommended trip summary fields:
+
+* `id`
+* `title`
+* `destination`
+* `startDate`
+* `endDate`
+* `travelers`
+* `subtitle`
+* `coverImage`
+* `coverAlt`
+* `mood`
+* `status`
+* `updatedAt`
+
+Trip-specific source content is grouped by trip:
+
+```text
+content/
+  trips/
+    zakynthos-2026/
+      meta.json
+      highlights.json
+      quick-links.json
+      flights.json
+      stay.json
+      locations.json
+      itinerary.json
+      attractions.json
+      restaurants.json
+      planning.json
+      during-trip.json
+```
+
+Additional trips use the same file set under their own trip ids.
+
+### Storage approach
+
+Cloudflare D1 is the shared storage layer.
+
+Storage responsibilities:
+
+* `trip_sections` stores one JSON section per trip and section key.
+* `notes` stores notes for card or page targets within one trip.
+* `favorites` stores saved card targets within one trip.
+* `checklist_items` stores checklist rows and completion state within one trip.
+
+The `trip_id` value is the scope boundary for shared records. The API always reads and writes by `trip_id`. Local browser draft keys also include the trip id so drafts from one trip cannot appear on another trip.
+
+### API shape
+
+The API exposes trip-aware endpoints.
+
+Recommended endpoints:
+
+* `GET /api/session`
+* `POST /api/auth/login`
+* `POST /api/auth/logout`
+* `GET /api/trips`
+* `GET /api/trips/:tripId`
+* `PATCH /api/trips/:tripId/sections/:sectionKey`
+* `POST /api/trips/:tripId/notes`
+* `PUT /api/trips/:tripId/notes/:id`
+* `DELETE /api/trips/:tripId/notes/:id`
+* `PUT /api/trips/:tripId/favorites/:targetId`
+* `DELETE /api/trips/:tripId/favorites/:targetId`
+* `POST /api/trips/:tripId/checklist-items`
+* `PUT /api/trips/:tripId/checklist-items/:id`
+* `DELETE /api/trips/:tripId/checklist-items/:id`
+
+### Cloudflare Pages deployment
+
+The app uses:
+
+* Cloudflare Pages for static hosting.
+* Cloudflare Pages Functions for `/api/*`.
+* Cloudflare D1 through the `TRIP_DB` binding.
+* Encrypted Pages secrets for editor users and session signing.
+* GitHub Actions or Wrangler Pages deploys for static deployments.
+
+D1 migrations and seed SQL are explicit operational steps. Static deployments do not perform database writes automatically.
+
+No paid service or alternate deployment provider is required.
+
+### Zakynthos trip entry
+
+Zakynthos is represented as a normal trip entry:
+
+* Trip id: `zakynthos-2026`
+* Trip title: `Zakynthos Together`
+* Trip content: trip-scoped sections for metadata, highlights, quick links, flights, stay, locations, itinerary, attractions, restaurants, planning, and during-trip information
+
+Zakynthos uses the same selected-trip Cockpit, Plan, Map, Budget, More, and secondary screens as every trip workspace.
+
+### Future portfolio extensions
+
+The trip collection layer enables later features without changing the trip workspace design:
+
+* Add more trips.
+* Archive completed trips.
+* Duplicate a trip as a template.
+* Create reusable trip templates by travel style.
+* Filter trips by planned, active, completed, and archived states.
+* Add per-trip permissions.
+* Add import/export for trip data.
+* Add a completed-trip memory mode.
+
 ---
 
 # 7. Core Screens
